@@ -1,0 +1,34 @@
+[2026-06-16 11:01:49] === INÍCIO DA MIGRAÇÃO ===
+[2026-06-16 11:01:49] Backup criado: D:\Projetos\python\STP-SistemaTransportePacientes\db\transporte_pacientes_backup_20260616_110149.db
+[2026-06-16 11:01:49] Limpando tabelas atuais...
+[2026-06-16 11:01:50] Tabelas limpas.
+[2026-06-16 11:01:50] Motorista duplicado ignorado: ROGERIO S.T
+[2026-06-16 11:01:50] Motorista duplicado ignorado: CLAUDEMIR S.T
+[2026-06-16 11:01:50] Motoristas importados: 49
+[2026-06-16 11:01:50] Veículos importados: 76
+[2026-06-16 11:01:51] Pacientes importados: 2409
+[2026-06-16 11:01:52]   ... 1000 agendamentos processados
+[2026-06-16 11:01:52]   ... 2000 agendamentos processados
+[2026-06-16 11:01:52]   ... 3000 agendamentos processados
+[2026-06-16 11:01:52]   ... 4000 agendamentos processados
+[2026-06-16 11:01:52]   ... 5000 agendamentos processados
+[2026-06-16 11:01:52]   ... 6000 agendamentos processados
+[2026-06-16 11:01:52]   ... 7000 agendamentos processados
+[2026-06-16 11:01:52]   ... 8000 agendamentos processados
+[2026-06-16 11:01:53]   ... 9000 agendamentos processados
+[2026-06-16 11:01:53]   ... 10000 agendamentos processados
+[2026-06-16 11:01:53]   ... 11000 agendamentos processados
+[2026-06-16 11:01:53]   ... 12000 agendamentos processados
+[2026-06-16 11:01:53]   ... 13000 agendamentos processados
+[2026-06-16 11:01:53]   ... 14000 agendamentos processados
+[2026-06-16 11:01:53]   ... 15000 agendamentos processados
+[2026-06-16 11:01:54]   ... 16000 agendamentos processados
+[2026-06-16 11:01:54] Agendamentos importados: 16969
+[2026-06-16 11:01:54] Agendamentos ignorados: 2293
+[2026-06-16 11:01:54] Pacientes extras criados na migração: 56
+[2026-06-16 11:01:54] === RESULTADO FINAL ===
+[2026-06-16 11:01:54] Pacientes: 2465
+[2026-06-16 11:01:54] Motoristas: 49
+[2026-06-16 11:01:54] Veiculos: 76
+[2026-06-16 11:01:54] Agendamentos: 16969
+[2026-06-16 11:01:54] === MIGRAÇÃO CONCLUÍDA ===

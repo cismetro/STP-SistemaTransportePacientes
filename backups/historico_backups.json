@@ -1,0 +1,37 @@
+[
+  {
+    "arquivo": "backup_completo_20250909_140206.zip",
+    "data": "2025-09-09T14:02:06.136716",
+    "tipo": "manual",
+    "tamanho": 3063,
+    "tamanho_mb": 0.0
+  },
+  {
+    "arquivo": "dados_completos_20250909_142629.xlsx",
+    "data": "2025-09-09T14:26:29.978611",
+    "tipo": "excel",
+    "tamanho": 4929,
+    "tamanho_mb": 0.0
+  },
+  {
+    "arquivo": "dados_completos_20250909_142645.xlsx",
+    "data": "2025-09-09T14:26:45.064811",
+    "tipo": "excel",
+    "tamanho": 4928,
+    "tamanho_mb": 0.0
+  },
+  {
+    "arquivo": "backup_completo_20250909_142652.zip",
+    "data": "2025-09-09T14:26:52.969850",
+    "tipo": "manual",
+    "tamanho": 3063,
+    "tamanho_mb": 0.0
+  },
+  {
+    "arquivo": "backup_completo_20260623_125053.zip",
+    "data": "2026-06-23T12:50:53.568394",
+    "tipo": "manual",
+    "tamanho": 1236951,
+    "tamanho_mb": 1.18
+  }
+]

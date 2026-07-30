@@ -1,0 +1,12 @@
+Atendente (input + validação)
+Horario Consulta (adcionar)
+Horario Triagem (alterar o titutlo Hora *)
+Enderelo do paciente (trocar por Endereço de Origem)
+Destino outros destinos (IMPRENCIDIVEL)
+Acompanhante (upercase)
+RG (formato RG)
+Horário de Saída do ponto de origem (inicial) 
+
+
+
+

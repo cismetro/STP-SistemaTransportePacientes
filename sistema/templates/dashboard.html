@@ -1,0 +1,968 @@
+{% extends "base.html" %}
+
+{% block title %}Início{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard specific styles */
+    .stats-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    [data-bs-theme="dark"] .stats-card {
+        background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    }
+    
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--card-color, var(--primary-color));
+    }
+    
+    .stats-card.card-primary::before { background: var(--primary-color); }
+    .stats-card.card-success::before { background: var(--success-color); }
+    .stats-card.card-warning::before { background: var(--warning-color); }
+    .stats-card.card-info::before { background: var(--info-color); }
+    .stats-card.card-danger::before { background: var(--danger-color); }
+    
+    .stats-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-icon.icon-primary { background: linear-gradient(135deg, var(--primary-color), #4a49c4); }
+    .stats-icon.icon-success { background: linear-gradient(135deg, var(--success-color), #1e7e34); }
+    .stats-icon.icon-warning { background: linear-gradient(135deg, var(--warning-color), #e0a800); }
+    .stats-icon.icon-info { background: linear-gradient(135deg, var(--info-color), #138496); }
+    .stats-icon.icon-danger { background: linear-gradient(135deg, var(--danger-color), #c82333); }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--bs-body-color);
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .stats-label {
+        color: var(--bs-secondary-color);
+        font-weight: 500;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-change {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .stats-change.positive {
+        background: rgba(40, 167, 69, 0.1);
+        color: var(--success-color);
+    }
+    
+    .stats-change.negative {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
+    }
+    
+    .stats-change.neutral {
+        background: rgba(108, 117, 125, 0.1);
+        color: var(--secondary-color);
+    }
+    
+    .quick-action {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: var(--bs-body-color);
+        transition: all 0.3s ease;
+        display: block;
+        text-align: center;
+    }
+    
+    [data-bs-theme="dark"] .quick-action {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+    
+    .quick-action:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+        color: var(--primary-color);
+    }
+    
+    .quick-action i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        display: block;
+        color: var(--primary-color);
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-left: 3px solid var(--bs-border-color);
+        margin-bottom: 0.5rem;
+        background: var(--bs-secondary-bg);
+        border-radius: 0 0.5rem 0.5rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        border-left-color: var(--primary-color);
+        background: rgba(93, 92, 222, 0.05);
+    }
+    
+    .activity-time {
+        font-size: 0.75rem;
+        color: var(--bs-secondary-color);
+    }
+    
+    .activity-description {
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+    }
+    
+    .alert-item {
+        border-left: 4px solid var(--alert-color, var(--warning-color));
+        background: rgba(255, 193, 7, 0.1);
+        border-radius: 0 0.5rem 0.5rem 0;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .alert-item:hover {
+        background: rgba(255, 193, 7, 0.15);
+    }
+    
+    .alert-item.alert-danger {
+        border-left-color: var(--danger-color);
+        background: rgba(220, 53, 69, 0.1);
+    }
+    
+    .alert-item.alert-danger:hover {
+        background: rgba(220, 53, 69, 0.15);
+    }
+    
+    .alert-item.alert-warning {
+        border-left-color: var(--warning-color);
+        background: rgba(255, 193, 7, 0.1);
+    }
+    
+    .alert-item.alert-warning:hover {
+        background: rgba(255, 193, 7, 0.15);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+    
+    [data-bs-theme="dark"] .chart-container {
+        background: #2d2d2d;
+    }
+    
+    .welcome-banner {
+        background: linear-gradient(135deg, var(--primary-color), #4a49c4);
+        color: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .welcome-banner::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: rotate(45deg);
+    }
+    
+    .welcome-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .today-schedule {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .schedule-item {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    [data-bs-theme="dark"] .schedule-item {
+        background: #2d2d2d;
+    }
+    
+    .schedule-item:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+    
+    .schedule-time {
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+    }
+    
+    .schedule-patient {
+        font-weight: 500;
+        margin: 0.25rem 0;
+    }
+    
+    .schedule-details {
+        font-size: 0.875rem;
+        color: var(--bs-secondary-color);
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        color: var(--bs-body-color);
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .page-subtitle {
+        color: var(--bs-secondary-color);
+        font-size: 0.9rem;
+        margin: 0.5rem 0 0 0;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stats-number {
+            font-size: 2rem;
+        }
+        
+        .stats-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+        
+        .welcome-banner {
+            padding: 1.5rem;
+        }
+        
+        .quick-action {
+            padding: 1rem;
+        }
+        
+        .quick-action i {
+            font-size: 1.5rem;
+        }
+    }
+    
+    /* Loading states */
+    .loading-skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 0.375rem;
+        height: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    [data-bs-theme="dark"] .loading-skeleton {
+        background: linear-gradient(90deg, #404040 25%, #505050 50%, #404040 75%);
+        background-size: 200% 100%;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Welcome Banner -->
+    <div class="welcome-banner fade-in-up">
+        <div class="welcome-content">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h3 mb-2">
+                        {% if current_user.primeiro_acesso %}
+                            Bem-vindo ao Sistema, {{ current_user.nome.split()[0] }}! 🎉
+                        {% else %}
+                            {% set hora = moment().format('HH')|int %}
+                            {% if hora < 12 %}
+                                Bom dia, {{ current_user.nome.split()[0] }}! ☀️
+                            {% elif hora < 18 %}
+                                Boa tarde, {{ current_user.nome.split()[0] }}! 🌤️
+                            {% else %}
+                                Boa noite, {{ current_user.nome.split()[0] }}! 🌙
+                            {% endif %}
+                        {% endif %}
+                    </h1>
+                    <p class="mb-0 opacity-90">
+                        STP - Sistema de Transporte de Pacientes - {{ moment().format('dddd, DD [de] MMMM [de] YYYY') }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex flex-column align-items-end">
+                        <span class="h4 mb-1" id="currentTime">{{ moment().format('HH:mm') }}</span>
+                        <small class="opacity-75">Última atualização</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        
+        <!-- Agendamentos Hoje -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stats-card card-primary fade-in-up" style="animation-delay: 0.1s">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon icon-primary">
+                            <i class="ti ti-calendar-check"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="stats-label">Agendamentos Hoje</div>
+                            <div class="stats-number" id="agendamentosHoje">{{ stats.agendamentos_hoje or 0 }}</div>
+                            <div class="stats-change positive">
+                                <i class="ti ti-arrow-up"></i>
+                                <span>{{ stats.agendamentos_pendentes or 0 }} pendentes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pacientes Ativos -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stats-card card-success fade-in-up" style="animation-delay: 0.2s">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon icon-success">
+                            <i class="ti ti-users"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="stats-label">Pacientes Ativos</div>
+                            <div class="stats-number">{{ stats.pacientes_ativos or 0 }}</div>
+                            <div class="stats-change neutral">
+                                <i class="ti ti-wheelchair"></i>
+                                <span>{{ stats.pacientes_cadeirantes or 0 }} cadeirantes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Motoristas Disponíveis -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stats-card card-info fade-in-up" style="animation-delay: 0.3s">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon icon-info">
+                            <i class="ti ti-id-badge-2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="stats-label">Motoristas Disponíveis</div>
+                            <div class="stats-number">{{ stats.motoristas_disponiveis or 0 }}</div>
+                            <div class="stats-change positive">
+                                <i class="ti ti-circle-check"></i>
+                                <span>{{ stats.motoristas_habilitados or 0 }} habilitados</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Veículos Disponíveis -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card stats-card card-warning fade-in-up" style="animation-delay: 0.4s">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon icon-warning">
+                            <i class="ti ti-truck"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="stats-label">Veículos Disponíveis</div>
+                            <div class="stats-number">{{ stats.veiculos_disponiveis or 0 }}</div>
+                            <div class="stats-change {{ 'negative' if stats.veiculos_manutencao > 0 else 'neutral' }}">
+                                <i class="ti ti-tool"></i>
+                                <span>{{ stats.veiculos_manutencao or 0 }} em manutenção</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <div class="row g-4">
+        
+        <!-- Main Content -->
+        <div class="col-xl-8">
+            
+            <!-- Quick Actions -->
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.5s">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-bolt me-2"></i>
+                        Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% if current_user.pode_criar_agendamentos %}
+                        <div class="col-md-3 col-6">
+                            <a href="{{ url_for('agendamentos.novo') }}" class="quick-action">
+                                <i class="ti ti-circle-plus"></i>
+                                <div class="fw-semibold">Novo Agendamento</div>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if current_user.pode_gerenciar_pacientes %}
+                        <div class="col-md-3 col-6">
+                            <a href="{{ url_for('pacientes.novo') }}" class="quick-action">
+                                <i class="ti ti-user-plus"></i>
+                                <div class="fw-semibold">Novo Paciente</div>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-md-3 col-6">
+                            <a href="{{ url_for('agendamentos.agenda') }}" class="quick-action">
+                                <i class="ti ti-calendar"></i>
+                                <div class="fw-semibold">Ver Agenda</div>
+                            </a>
+                        </div>
+                        
+                        {% if current_user.pode_gerar_relatorios %}
+                        <div class="col-md-3 col-6">
+                            <a href="{{ url_for('agendamentos.relatorio') }}" class="quick-action">
+                                <i class="ti ti-file-text"></i>
+                                <div class="fw-semibold">Relatórios</div>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Today's Schedule -->
+            <div class="card fade-in-up" style="animation-delay: 0.6s">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-calendar me-2"></i>
+                        Agendamentos de Hoje
+                    </h5>
+                    <a href="{{ url_for('agendamentos.listar') }}" class="btn btn-sm btn-outline-primary">
+                        Ver Todos
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="today-schedule" id="todaySchedule">
+                        
+                        {% if agendamentos_hoje %}
+                        {% for agendamento in agendamentos_hoje %}
+                        <div class="schedule-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <div class="schedule-time">{{ agendamento.horario_saida.strftime('%H:%M') }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="schedule-patient">{{ agendamento.paciente.nome_completo }}</div>
+                                    <div class="schedule-details">{{ agendamento.paciente.telefone_formatado }}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="schedule-details">
+                                        <strong>Destino:</strong><br>
+                                        {{ agendamento.destino_nome }}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="badge bg-{{ 'success' if agendamento.status == 'confirmado' else 'warning' if agendamento.status == 'agendado' else 'primary' }}">
+                                            {{ agendamento.status.replace('_', ' ').title() }}
+                                        </span>
+                                        <a href="{{ url_for('agendamentos.visualizar', id=agendamento.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="ti ti-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="ti ti-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3 mb-0">Nenhum agendamento para hoje</p>
+                            {% if current_user.pode_criar_agendamentos %}
+                            <a href="{{ url_for('agendamentos.novo') }}" class="btn btn-primary mt-2">
+                                <i class="ti ti-circle-plus me-1"></i>
+                                Criar Agendamento
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-xl-4">
+            
+            <!-- Alerts -->
+            {% if alertas %}
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.7s">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-alert-triangle me-2"></i>
+                        Alertas Importantes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for alerta in alertas %}
+                    <div class="alert-item alert-{{ alerta.urgencia }}">
+                        <div class="d-flex align-items-start">
+                            <i class="ti ti-{{ 'alert-triangle' if alerta.urgencia == 'danger' else 'alert-triangle' }} me-2 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <strong>{{ alerta.titulo }}</strong>
+                                <div class="small">{{ alerta.descricao }}</div>
+                                {% if alerta.link %}
+                                <a href="{{ alerta.link }}" class="btn btn-sm btn-outline-{{ alerta.urgencia }} mt-2">
+                                    Ver Detalhes
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Weather Widget (Optional) -->
+            <div class="card mb-4 fade-in-up" style="animation-delay: 0.8s">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-cloud-sun me-2"></i>
+                        Condições Climáticas
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="weather-info" id="weatherInfo">
+                        <i class="ti ti-sun" style="font-size: 3rem; color: #ffc107;"></i>
+                        <h4 class="mt-2">25°C</h4>
+                        <p class="text-muted mb-0">Ensolarado</p>
+                        <small class="text-muted">Cosmópolis, SP</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card fade-in-up" style="animation-delay: 0.9s">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-history me-2"></i>
+                        Atividade Recente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentActivity">
+                        
+                        {% if atividades_recentes %}
+                        {% for atividade in atividades_recentes %}
+                        <div class="activity-item">
+                            <div class="activity-time">{{ atividade.timestamp.strftime('%H:%M') }}</div>
+                            <div class="activity-description">{{ atividade.descricao }}</div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="text-center py-3">
+                            <i class="ti ti-clock text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted mt-2 mb-0">Nenhuma atividade recente</p>
+                        </div>
+                        {% endif %}
+                        
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- Refresh Data Modal (Hidden by default) -->
+<div class="modal fade" id="refreshModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="mb-0">Atualizando dados...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Update current time
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        document.getElementById('currentTime').textContent = timeString;
+    }
+    
+    // Update time every minute
+    updateTime();
+    setInterval(updateTime, 60000);
+    
+    // Auto-refresh dashboard data every 5 minutes
+    let refreshInterval;
+    
+    function startAutoRefresh() {
+        refreshInterval = setInterval(refreshDashboardData, 5 * 60 * 1000);
+    }
+    
+    function stopAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+    }
+    
+    // Refresh dashboard data
+    function refreshDashboardData() {
+        fetch('{{ url_for("dashboard_api") }}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateDashboardStats(data.stats);
+            updateTodaySchedule(data.agendamentos_hoje);
+            updateRecentActivity(data.atividades_recentes);
+            updateAlerts(data.alertas);
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar dados:', error);
+        });
+    }
+    
+    function updateDashboardStats(stats) {
+        if (stats) {
+            const agendamentosHoje = document.getElementById('agendamentosHoje');
+            if (agendamentosHoje) {
+                animateNumber(agendamentosHoje, parseInt(agendamentosHoje.textContent), stats.agendamentos_hoje);
+            }
+        }
+    }
+    
+    function updateTodaySchedule(agendamentos) {
+        const container = document.getElementById('todaySchedule');
+        if (!container || !agendamentos) return;
+        
+        if (agendamentos.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="ti ti-calendar-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3 mb-0">Nenhum agendamento para hoje</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        agendamentos.forEach(agendamento => {
+            const statusClass = {
+                'confirmado': 'success',
+                'agendado': 'warning',
+                'em_andamento': 'primary',
+                'concluido': 'secondary'
+            }[agendamento.status] || 'secondary';
+            
+            html += `
+                <div class="schedule-item">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <div class="schedule-time">${agendamento.horario_saida}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="schedule-patient">${agendamento.paciente_nome}</div>
+                            <div class="schedule-details">${agendamento.paciente_telefone}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="schedule-details">
+                                <strong>Destino:</strong><br>
+                                ${agendamento.destino_nome}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="badge bg-${statusClass}">
+                                    ${agendamento.status_nome}
+                                </span>
+                                <a href="${SCRIPT_ROOT}/agendamentos/${agendamento.id}" class="btn btn-sm btn-outline-primary">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function updateRecentActivity(atividades) {
+        const container = document.getElementById('recentActivity');
+        if (!container || !atividades) return;
+        
+        if (atividades.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="ti ti-clock text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2 mb-0">Nenhuma atividade recente</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        atividades.forEach(atividade => {
+            html += `
+                <div class="activity-item">
+                    <div class="activity-time">${atividade.timestamp}</div>
+                    <div class="activity-description">${atividade.descricao}</div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function updateAlerts(alertas) {
+        // Implementation for updating alerts section
+        // This would update any alert notifications
+    }
+    
+    // Animate number changes
+    function animateNumber(element, from, to) {
+        if (from === to) return;
+        
+        const duration = 1000;
+        const startTime = performance.now();
+        
+        function animate(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const current = Math.round(from + (to - from) * progress);
+            element.textContent = current;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        }
+        
+        requestAnimationFrame(animate);
+    }
+    
+    // Page visibility handling
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopAutoRefresh();
+        } else {
+            startAutoRefresh();
+            // Refresh immediately when page becomes visible
+            setTimeout(refreshDashboardData, 1000);
+        }
+    });
+    
+    // Start auto refresh
+    startAutoRefresh();
+    
+    // Manual refresh button (if exists)
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Atualizando...';
+            
+            refreshDashboardData();
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="ti ti-refresh me-2"></i>Atualizar';
+            }, 2000);
+        });
+    }
+    
+    // Initialize tooltips for stats cards
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add click handlers for stats cards
+    document.querySelectorAll('.stats-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function() {
+            const cardType = this.classList.contains('card-primary') ? 'agendamentos' :
+                            this.classList.contains('card-success') ? 'pacientes' :
+                            this.classList.contains('card-info') ? 'motoristas' :
+                            this.classList.contains('card-warning') ? 'veiculos' : null;
+            
+            if (cardType) {
+                window.location.href = `${SCRIPT_ROOT}/${cardType}`;
+            }
+        });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + Shift + N = Novo Agendamento
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+            e.preventDefault();
+            const novoAgendamentoLink = document.querySelector('a[href*="agendamentos/novo"]');
+            if (novoAgendamentoLink) {
+                novoAgendamentoLink.click();
+            }
+        }
+        
+        // Ctrl/Cmd + Shift + A = Ver Agenda
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+            e.preventDefault();
+            const agendaLink = document.querySelector('a[href*="agenda"]');
+            if (agendaLink) {
+                agendaLink.click();
+            }
+        }
+        
+        // F5 = Refresh Dashboard
+        if (e.key === 'F5') {
+            e.preventDefault();
+            refreshDashboardData();
+        }
+    });
+    
+    // Show keyboard shortcuts help
+    const helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) {
+        helpBtn.addEventListener('click', function() {
+            showToast(`
+                <strong>Atalhos do Teclado:</strong><br>
+                • Ctrl+Shift+N: Novo Agendamento<br>
+                • Ctrl+Shift+A: Ver Agenda<br>
+                • F5: Atualizar Início
+            `, 'info');
+        });
+    }
+    
+    // Service Worker registration for PWA features (optional)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register(SCRIPT_ROOT + '/sw.js')
+            .then(registration => {
+                console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    }
+    
+});
+</script>
+{% endblock %}
+
+
+
+<footer>
+<p>teste</p>
+</footer>

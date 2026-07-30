@@ -1,0 +1,11 @@
+Ajustar - Menu para sidebar (direita)
+
+
+Sidebar Fixa
+Sidebar Recolhível (Collapse)
+Sidebar Hierárquica (Árvore)
+Sidebar com Ícones
+------------------------------------------------------------------------------------
+Depois pode seguir com a validação da Impressão — Agendamentos (novo layout).						
+-------------------------------------------------------------------------------------
+

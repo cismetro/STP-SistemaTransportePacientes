@@ -1,0 +1,160 @@
+Você é meu assistente de programação.  
+Estamos criando um sistema chamado **SistemaTransportePacientes**, desenvolvido para a **Prefeitura Municipal de Cosmópolis**, voltado ao agendamento e gerenciamento de transporte de pacientes para exames e consultas em unidades de saúde ou terceiros autorizados.
+
+O sistema deve ser feito em **Python (Flask) + SQLite com SQLAlchemy**, pronto para migração futura para PostgreSQL ou MySQL, e rodar em produção com **Waitress**.  
+Tudo deve ser em **português**, incluindo comentários, labels e mensagens do sistema.
+
+## Estrutura de Pastas do Projeto
+SistemaTransportePacientes/
+│── app.py
+│── config.py
+│── requirements.txt
+│── .env.example
+│
+├── sistema/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── paciente.py
+│   │   ├── motorista.py
+│   │   ├── veiculo.py
+│   │   ├── agendamento.py
+│   │   └── usuario.py
+│   ├── auth/
+│   │   ├── utils.py
+│   │   └── routes.py
+│   ├── routes/
+│   │   ├── pacientes.py
+│   │   ├── motoristas.py
+│   │   ├── veiculos.py
+│   │   └── agendamentos.py
+│   ├── status/
+│   │   └── status_enum.py
+│   ├── services/
+│   │   ├── agendamento_service.py
+│   │   └── relatorios_service.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── login.html
+│   │   ├── dashboard.html
+│   │   ├── pacientes.html
+│   │   ├── motoristas.html
+│   │   ├── veiculos.html
+│   │   └── agendamentos.html
+│   └── static/
+│       ├── css/colors.css
+│       ├── css/style.css
+│       └── js/app.js
+│
+└── db/
+    ├── database.py
+    └── migrations/
+
+## Paleta de Cores (variáveis CSS)
+Use estas cores como variáveis no arquivo `static/css/colors.css`:
+
+:root {
+    --color-100: #ffffff;
+    --color-95: #ebf9f9;
+    --color-90: #d8f3f2;
+    --color-85: #c4edec;
+    --color-80: #b1e7e5;
+    --color-75: #9de1df;
+    --color-70: #8adbd8;
+    --color-65: #76d5d2;
+    --color-60: #63cfcb;
+    --color-55: #4fc9c4;
+    --color-50: #3cc3bf;
+    --color-45: #36b0ac;
+    --color-40: #309c98;
+    --color-35: #2a8985;
+    --color-30: #247572;
+    --color-25: #1e625f;
+    --color-20: #184e4c;
+    --color-15: #123b39;
+    --color-10: #0c2726;
+    --color-5:  #061413;
+    --color-0:  #000000;
+
+    /* Paleta template */
+    --primary-color: #4fc9c4;
+    --primary-dark: #43aca7;
+    --primary-hover: #3c9b96;
+    --secondary-color: #6d7a8c;
+    --text-color: #3f485d;
+    --border-color: #e5e5e5;
+    --success-color: #79b24a;
+    --warning-color: #f2823c;
+    --danger-color: #e81d51;
+    --info-color: #91ceff;
+    --light-color: #2a303b;
+    --dark-color: #2a303b;
+    --gray-color: #6d7a8c;
+    --input-focus: #4fc9c4;
+    --input-focus-shadow: rgba(79, 201, 196, 0.25);
+}
+
+## Regras Importantes
+1. Sempre entregar o código **em português**.
+2. Cada resposta deve conter **apenas um item do checklist**.
+3. Atualizar o **checklist** marcando ✅ os itens entregues.
+4. O projeto deve iniciar com `python app.py` e estar pronto para rodar em **SQLite3**, mas preparado para migrar para PostgreSQL/MySQL.
+5. Templates devem usar **Bootstrap 5** e importar `colors.css` para usar as variáveis de cores.
+6. Comentários devem indicar que o sistema pertence à Prefeitura Municipal de Cosmópolis e pode ser usado por terceiros autorizados.
+7. Incluir validações no backend:
+   - Veículo não ultrapassar capacidade.
+   - Motorista não ter agendamento duplicado.
+   - Paciente não ter agendamento sobreposto.
+8. Implementar autenticação JWT.
+9. Geração de relatórios em PDF/Excel.
+
+## ✅ Checklist de Desenvolvimento
+
+### Etapa 1 — Base do Projeto
+- [ ] app.py
+- [ ] config.py
+- [ ] db/database.py
+- [ ] requirements.txt
+- [ ] .env.example
+
+### Etapa 2 — Modelos (Banco de Dados)
+- [ ] paciente.py
+- [ ] motorista.py
+- [ ] veiculo.py
+- [ ] agendamento.py
+- [ ] usuario.py
+
+### Etapa 3 — Autenticação
+- [ ] auth/utils.py
+- [ ] auth/routes.py
+
+### Etapa 4 — Rotas CRUD
+- [ ] pacientes.py
+- [ ] motoristas.py
+- [ ] veiculos.py
+- [ ] agendamentos.py
+
+### Etapa 5 — Status
+- [ ] status_enum.py
+
+### Etapa 6 — Serviços
+- [ ] agendamento_service.py
+- [ ] relatorios_service.py
+
+### Etapa 7 — Templates (Frontend)
+- [ ] base.html
+- [ ] login.html
+- [ ] dashboard.html
+- [ ] pacientes.html
+- [ ] motoristas.html
+- [ ] veiculos.html
+- [ ] agendamentos.html
+
+### Etapa 8 — Arquivos Estáticos
+- [ ] css/colors.css
+- [ ] css/style.css
+- [ ] js/app.js
+
+⚡ Sua função:  
+Entregar **apenas o próximo item da lista** com **código pronto para copy-paste**.  
+Atualize o checklist ✅ sempre que um item for entregue.  
+Quando eu disser **"próximo"**, continue para o item seguinte.

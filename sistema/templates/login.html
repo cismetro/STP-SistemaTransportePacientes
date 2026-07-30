@@ -1,0 +1,725 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Login specific styles */
+    .login-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+    
+    [data-bs-theme="dark"] .login-container {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    }
+    
+    .login-card {
+        max-width: 450px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    [data-bs-theme="dark"] .login-card {
+        background: rgba(45, 45, 45, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .login-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+    
+    .login-header {
+        background: linear-gradient(135deg, var(--primary-color), #4a49c4);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        border-radius: 1rem 1rem 0 0;
+    }
+    
+    .login-header .logo {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .login-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    
+    .login-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+    
+    .login-body {
+        padding: 2rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-floating > .form-control {
+        border-radius: 0.5rem;
+        border: 2px solid #e9ecef;
+        padding: 1rem 0.75rem;
+        height: calc(3.5rem + 2px);
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating > .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(93, 92, 222, 0.25);
+    }
+    
+    .form-floating > label {
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: var(--primary-color);
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+    }
+    
+    .btn-login {
+        width: 100%;
+        padding: 0.875rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        background: linear-gradient(135deg, var(--primary-color), #4a49c4);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .btn-login:hover {
+        background: linear-gradient(135deg, #4a49c4, #3d3ba0);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(93, 92, 222, 0.3);
+    }
+    
+    .btn-login:active {
+        transform: translateY(0);
+    }
+    
+    .btn-login:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .divider {
+        text-align: center;
+        margin: 1.5rem 0;
+        position: relative;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    
+    .divider::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #dee2e6;
+        z-index: 0;
+    }
+    
+    .divider span {
+        background: white;
+        padding: 0 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    [data-bs-theme="dark"] .divider span {
+        background: rgba(45, 45, 45, 0.95);
+    }
+    
+    .forgot-password {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .forgot-password:hover {
+        color: #4a49c4;
+        text-decoration: underline;
+    }
+    
+    .system-info {
+        background: rgba(248, 249, 250, 0.8);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        font-size: 0.8rem;
+        color: #6c757d;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    [data-bs-theme="dark"] .system-info {
+        background: rgba(33, 37, 41, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .system-info h6 {
+        color: var(--primary-color);
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .system-info ul {
+        margin: 0;
+        padding-left: 1.2rem;
+    }
+    
+    .system-info li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .password-toggle {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        z-index: 10;
+        transition: color 0.3s ease;
+    }
+    
+    .password-toggle:hover {
+        color: var(--primary-color);
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1rem;
+        z-index: 1000;
+    }
+    
+    [data-bs-theme="dark"] .loading-overlay {
+        background: rgba(45, 45, 45, 0.9);
+    }
+    
+    .version-info {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        font-size: 0.75rem;
+        color: rgba(108, 117, 125, 0.7);
+        background: rgba(255, 255, 255, 0.8);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        backdrop-filter: blur(5px);
+    }
+    
+    [data-bs-theme="dark"] .version-info {
+        background: rgba(45, 45, 45, 0.8);
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    /* Animations */
+    .slide-in-up {
+        animation: slideInUp 0.6s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .shake {
+        animation: shake 0.5s ease-in-out;
+    }
+    
+    @keyframes shake {
+        0%, 20%, 40%, 60%, 80% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 576px) {
+        .login-container {
+            padding: 1rem 0.5rem;
+        }
+        
+        .login-card {
+            margin: 0;
+        }
+        
+        .login-header {
+            padding: 1.5rem;
+        }
+        
+        .login-header .logo {
+            font-size: 2.5rem;
+        }
+        
+        .login-body {
+            padding: 1.5rem;
+        }
+        
+        .system-info {
+            font-size: 0.75rem;
+        }
+    }
+    
+    /* Accessibility improvements */
+    .form-control:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+    
+    .btn:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+    
+    /* Custom checkbox */
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .form-check-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(93, 92, 222, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card slide-in-up">
+        <!-- Loading overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Entrando...</span>
+            </div>
+        </div>
+        
+        <!-- Header -->
+        <div class="login-header">
+            <i class="fas fa-ambulance logo"></i>
+            <h3>STP - Sistema de Transporte de Paciente</h3>
+            <p>Prefeitura Municipal de Cosmópolis</p>
+        </div>
+        
+        <!-- Body -->
+        <div class="login-body">
+            <form method="POST" id="loginForm" novalidate>
+                {{ csrf_token() if csrf_token }}
+                
+                <!-- Login field -->
+                <div class="form-floating">
+                    <input type="text" 
+                           class="form-control" 
+                           id="login" 
+                           name="login" 
+                           placeholder="Login ou Email"
+                           value="{{ request.form.login if request.form.login else '' }}"
+                           autocomplete="username"
+                           autocapitalize="none"
+                           spellcheck="false"
+                           required>
+                    <label for="login">
+                        <i class="ti ti-user me-2"></i>Login ou Email
+                    </label>
+                    <div class="invalid-feedback"></div>
+                </div>
+                
+                <!-- Password field -->
+                <div class="form-floating position-relative">
+                    <input type="password" 
+                           class="form-control pe-5" 
+                           id="senha" 
+                           name="senha" 
+                           placeholder="Senha"
+                           autocomplete="current-password"
+                           required>
+                    <label for="senha">
+                        <i class="ti ti-lock me-2"></i>Senha
+                    </label>
+                    <button type="button" 
+                            class="password-toggle" 
+                            id="passwordToggle"
+                            title="Mostrar/ocultar senha"
+                            aria-label="Mostrar/ocultar senha">
+                        <i class="ti ti-eye"></i>
+                    </button>
+                    <div class="invalid-feedback"></div>
+                </div>
+                
+                <!-- Remember me -->
+                <div class="form-check mb-3">
+                    <input class="form-check-input" 
+                           type="checkbox" 
+                           value="1" 
+                           id="lembrar" 
+                           name="lembrar"
+                           {{ 'checked' if request.form.lembrar else '' }}>
+                    <label class="form-check-label" for="lembrar">
+                        Lembrar de mim
+                    </label>
+                </div>
+                
+                <!-- Submit button -->
+                <button type="submit" class="btn btn-login mb-3" id="submitBtn">
+                    <i class="ti ti-login me-2"></i>
+                    Entrar
+                </button>
+                
+                <!-- Hidden field for next page -->
+                {% if request.args.get('next') %}
+                <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+                {% endif %}
+            </form>
+            
+            <!-- Divider -->
+            <div class="divider">
+                <span>Precisa de ajuda?</span>
+            </div>
+            
+            <!-- Forgot password link -->
+            <div class="text-center">
+                <a href="{{ url_for('auth.esqueci_senha') }}" class="forgot-password">
+                    <i class="ti ti-key me-1"></i>
+                    Esqueci minha senha
+                </a>
+            </div>
+            
+            <!-- System info -->
+            <div class="system-info">
+                <h6><i class="ti ti-info-circle me-1"></i>Informações do Sistema</h6>
+                <ul class="mb-0">
+                    <li>Acesso exclusivo para funcionários autorizados</li>
+                    <li>Sistema protegido por criptografia</li>
+                    <li>Horário de funcionamento: 06:00 às 18:00</li>
+                    <li>Suporte: (19) 3872-1234</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Version info -->
+    <div class="version-info">
+        v1.0.0
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const passwordToggle = document.getElementById('passwordToggle');
+    const passwordField = document.getElementById('senha');
+    const loginField = document.getElementById('login');
+    
+    // Password visibility toggle
+    passwordToggle.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        
+        const icon = this.querySelector('i');
+        icon.className = type === 'password' ? 'ti ti-eye' : 'ti ti-eye-off';
+    });
+    
+    // Form validation
+    function validateForm() {
+        let isValid = true;
+        
+        // Validate login
+        const loginValue = loginField.value.trim();
+        if (!loginValue) {
+            showFieldError(loginField, 'Login ou email é obrigatório');
+            isValid = false;
+        } else if (loginValue.length < 3) {
+            showFieldError(loginField, 'Login deve ter pelo menos 3 caracteres');
+            isValid = false;
+        } else {
+            hideFieldError(loginField);
+        }
+        
+        // Validate password
+        const passwordValue = passwordField.value;
+        if (!passwordValue) {
+            showFieldError(passwordField, 'Senha é obrigatória');
+            isValid = false;
+        } else if (passwordValue.length < 3) {
+            showFieldError(passwordField, 'Senha deve ter pelo menos 3 caracteres');
+            isValid = false;
+        } else {
+            hideFieldError(passwordField);
+        }
+        
+        return isValid;
+    }
+    
+    function showFieldError(field, message) {
+        field.classList.add('is-invalid');
+        const feedback = field.parentNode.querySelector('.invalid-feedback');
+        if (feedback) {
+            feedback.textContent = message;
+        }
+    }
+    
+    function hideFieldError(field) {
+        field.classList.remove('is-invalid');
+    }
+    
+    // Clear errors on input
+    [loginField, passwordField].forEach(field => {
+        field.addEventListener('input', function() {
+            hideFieldError(this);
+        });
+    });
+    
+    // Form submission
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        if (!validateForm()) {
+            // Shake animation for errors
+            loginForm.classList.add('shake');
+            setTimeout(() => {
+                loginForm.classList.remove('shake');
+            }, 500);
+            return;
+        }
+        
+        // Show loading
+        showLoading();
+        
+        // Disable form
+        const formElements = loginForm.querySelectorAll('input, button');
+        formElements.forEach(el => el.disabled = true);
+        
+        // Submit form
+        const formData = new FormData(loginForm);
+        
+        fetch(loginForm.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+                return;
+            }
+            return response.text();
+        })
+        .then(html => {
+            if (typeof html === 'string') {
+                // Parse response for errors
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const alerts = doc.querySelectorAll('.alert');
+                
+                if (alerts.length > 0) {
+                    // Show error messages
+                    hideLoading();
+                    formElements.forEach(el => el.disabled = false);
+                    
+                    alerts.forEach(alert => {
+                        const message = alert.textContent.trim();
+                        showToast(message, 'danger');
+                    });
+                    
+                    // Shake animation
+                    loginForm.classList.add('shake');
+                    setTimeout(() => {
+                        loginForm.classList.remove('shake');
+                    }, 500);
+                } else {
+                    // Success - reload page to let server handle redirect
+                    location.reload();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            hideLoading();
+            formElements.forEach(el => el.disabled = false);
+            showToast('Erro de conexão. Tente novamente.', 'danger');
+            
+            // Shake animation
+            loginForm.classList.add('shake');
+            setTimeout(() => {
+                loginForm.classList.remove('shake');
+            }, 500);
+        });
+    });
+    
+    function showLoading() {
+        loadingOverlay.style.display = 'flex';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Entrando...';
+    }
+    
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+        submitBtn.innerHTML = '<i class="ti ti-login me-2"></i>Entrar';
+    }
+    
+    // Auto-focus on first empty field
+    if (!loginField.value) {
+        loginField.focus();
+    } else if (!passwordField.value) {
+        passwordField.focus();
+    }
+    
+    // Enter key handling
+    [loginField, passwordField].forEach(field => {
+        field.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (field === loginField && !passwordField.value) {
+                    passwordField.focus();
+                } else {
+                    loginForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+    });
+    
+    // Prevent form submission on disabled state
+    loginForm.addEventListener('submit', function(e) {
+        if (submitBtn.disabled) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Auto-clear success messages from previous page
+    setTimeout(() => {
+        const successAlerts = document.querySelectorAll('.alert-success');
+        successAlerts.forEach(alert => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 3000);
+    
+    // Security: Disable right-click and F12 in production
+    {% if config.ENV == 'production' %}
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+            (e.ctrlKey && e.key === 'U')) {
+            e.preventDefault();
+        }
+    });
+    {% endif %}
+    
+    // Caps Lock detection
+    [loginField, passwordField].forEach(field => {
+        field.addEventListener('keyup', function(e) {
+            const capsLockOn = e.getModifierState && e.getModifierState('CapsLock');
+            const warning = field.parentNode.querySelector('.caps-warning');
+            
+            if (capsLockOn) {
+                if (!warning) {
+                    const warningEl = document.createElement('div');
+                    warningEl.className = 'caps-warning text-warning small mt-1';
+                    warningEl.innerHTML = '<i class="ti ti-alert-triangle me-1"></i>Caps Lock está ativado';
+                    field.parentNode.appendChild(warningEl);
+                }
+            } else if (warning) {
+                warning.remove();
+            }
+        });
+    });
+});
+
+// Toast notification function (if not available globally)
+if (typeof showToast === 'undefined') {
+    window.showToast = function(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+        
+        const toastElement = document.createElement('div');
+        toastElement.className = `toast align-items-center text-bg-${type} border-0`;
+        toastElement.setAttribute('role', 'alert');
+        toastElement.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toastElement);
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    };
+    
+    function createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '1055';
+        document.body.appendChild(container);
+        return container;
+    }
+}
+</script>
+{% endblock %}

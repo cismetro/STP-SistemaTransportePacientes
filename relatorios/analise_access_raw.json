@@ -1,0 +1,1078 @@
+{
+  "gerado_em": "2026-06-16T09:52:34.148417",
+  "access_path": "D:\\Projetos\\python\\STP-SistemaTransportePacientes\\dados\\Banco-AGENDAMENTO-DE-TRANSPORTE.accdb",
+  "sqlite_path": "D:\\Projetos\\python\\STP-SistemaTransportePacientes\\db\\transporte_pacientes.db",
+  "total_tabelas": 12,
+  "tabelas": {
+    "TAB AC": {
+      "registros": 91,
+      "colunas": [
+        {
+          "name": "CODIGO DO AC",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "DATA DO CADASTRO",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 2
+        },
+        {
+          "name": "NOME AC",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 3
+        },
+        {
+          "name": "IDADE",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 4
+        },
+        {
+          "name": "RUA",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 5
+        },
+        {
+          "name": "NUMERO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 6
+        },
+        {
+          "name": "BAIRRO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 7
+        },
+        {
+          "name": "TELEFONE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 8
+        },
+        {
+          "name": "RG",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 9
+        },
+        {
+          "name": "CPF",
+          "type": "DOUBLE",
+          "size": 53,
+          "nullable": true,
+          "ordinal": 10
+        },
+        {
+          "name": "DT DE NASCIMENTO",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 11
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {
+        "IDADE": [
+          "IDADE"
+        ],
+        "TAB ACNOME AC": [
+          "NOME AC"
+        ]
+      },
+      "amostra": [
+        {
+          "CODIGO DO AC": "2",
+          "DATA DO CADASTRO": "2024-11-19 00:00:00",
+          "NOME AC": "NÃO CONSTA",
+          "IDADE": null,
+          "RUA": null,
+          "NUMERO": null,
+          "BAIRRO": null,
+          "TELEFONE": null,
+          "RG": "0",
+          "CPF": "0.0",
+          "DT DE NASCIMENTO": null
+        },
+        {
+          "CODIGO DO AC": "3",
+          "DATA DO CADASTRO": "2024-12-26 00:00:00",
+          "NOME AC": "SEM ACOMPANHANTE",
+          "IDADE": null,
+          "RUA": null,
+          "NUMERO": null,
+          "BAIRRO": null,
+          "TELEFONE": null,
+          "RG": "3",
+          "CPF": "3.0",
+          "DT DE NASCIMENTO": null
+        },
+        {
+          "CODIGO DO AC": "55",
+          "DATA DO CADASTRO": "2026-01-06 00:00:00",
+          "NOME AC": "MANOEL FLORENTINO SALDANHA",
+          "IDADE": null,
+          "RUA": null,
+          "NUMERO": null,
+          "BAIRRO": null,
+          "TELEFONE": null,
+          "RG": "1223",
+          "CPF": "2460164858.0",
+          "DT DE NASCIMENTO": "1958-08-05 00:00:00"
+        }
+      ],
+      "campos_nulos": {
+        "NOME AC": 0,
+        "RUA": 43,
+        "NUMERO": 43,
+        "BAIRRO": 43,
+        "TELEFONE": 42
+      },
+      "duplicatas": {
+        "DATA DO CADASTRO": 8,
+        "IDADE": 10,
+        "RUA": 5,
+        "NUMERO": 2,
+        "BAIRRO": 6,
+        "CPF": 3,
+        "DT DE NASCIMENTO": 2
+      }
+    },
+    "TAB ADMINISTRADOR GERAL": {
+      "registros": 1,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "USUARIO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 2
+        },
+        {
+          "name": "SENHA",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 3
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "Código": "1",
+          "USUARIO": "DANIEL ADM",
+          "SENHA": "7683"
+        }
+      ],
+      "campos_nulos": {
+        "USUARIO": 0,
+        "SENHA": 0
+      },
+      "duplicatas": {}
+    },
+    "TAB ATENDENTE": {
+      "registros": 9,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "ATENDENTE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 2
+        },
+        {
+          "name": "SENHA",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 3
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {
+        "TAB ATENDENTEATENDENTE": [
+          "ATENDENTE"
+        ]
+      },
+      "amostra": [
+        {
+          "Código": "1",
+          "ATENDENTE": "DANIEL",
+          "SENHA": "7683"
+        },
+        {
+          "Código": "2",
+          "ATENDENTE": "BRENDA",
+          "SENHA": "0311"
+        },
+        {
+          "Código": "3",
+          "ATENDENTE": "ALISSON",
+          "SENHA": "2244"
+        }
+      ],
+      "campos_nulos": {
+        "ATENDENTE": 0,
+        "SENHA": 0
+      },
+      "duplicatas": {}
+    },
+    "TAB CONDIÇÃO DO PACIENTE": {
+      "registros": 10,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "CONDIÇÃO DO PACIENTE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 2
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "Código": "1",
+          "CONDIÇÃO DO PACIENTE": "DEAMBULA C.BAIXO"
+        },
+        {
+          "Código": "2",
+          "CONDIÇÃO DO PACIENTE": "MACA"
+        },
+        {
+          "Código": "3",
+          "CONDIÇÃO DO PACIENTE": "CADEIRANTE C.BAIXO"
+        }
+      ],
+      "campos_nulos": {
+        "CONDIÇÃO DO PACIENTE": 2
+      },
+      "duplicatas": {}
+    },
+    "TAB DESTINO": {
+      "registros": 819,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "DESTINO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 2
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {
+        "TAB DESTINODESTINO": [
+          "DESTINO"
+        ]
+      },
+      "amostra": [
+        {
+          "Código": "1",
+          "DESTINO": "ÁGUAS DE LINDÓIA/ AV DAS ESMERALDAS 160 JD PARAÍSO"
+        },
+        {
+          "Código": "2",
+          "DESTINO": "ÁGUAS DE LINDÓIA/ PRAÇA DR. VICENTE RIZZO 160"
+        },
+        {
+          "Código": "3",
+          "DESTINO": "AGUAS DE LINDÓIA/RUA NOSSA SENHORA DAS GRAÇAS N° 109"
+        }
+      ],
+      "campos_nulos": {
+        "DESTINO": 2
+      },
+      "duplicatas": {
+        "DESTINO": 9
+      }
+    },
+    "TAB ESPECIALIDADES": {
+      "registros": 134,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "ESPECIALIDADES",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 2
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "Código": "1",
+          "ESPECIALIDADES": "ANESTESIOLOGIA"
+        },
+        {
+          "Código": "2",
+          "ESPECIALIDADES": "CARDIOLOGIA"
+        },
+        {
+          "Código": "3",
+          "ESPECIALIDADES": "CIRURGIA GERAL"
+        }
+      ],
+      "campos_nulos": {
+        "ESPECIALIDADES": 5
+      },
+      "duplicatas": {
+        "ESPECIALIDADES": 6
+      }
+    },
+    "TAB PACIENTE": {
+      "registros": 2409,
+      "colunas": [
+        {
+          "name": "CÓDIGO DO PACIENTE",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "DATA DO CADASTRO",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 2
+        },
+        {
+          "name": "NOME DO PACIENTE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 3
+        },
+        {
+          "name": "IDADE",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 4
+        },
+        {
+          "name": "RUA",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 5
+        },
+        {
+          "name": "NUMERO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 6
+        },
+        {
+          "name": "BAIRRO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 7
+        },
+        {
+          "name": "COMPLEMENTO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 8
+        },
+        {
+          "name": "TELEFONE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 9
+        },
+        {
+          "name": "RG",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 10
+        },
+        {
+          "name": "CPF",
+          "type": "DOUBLE",
+          "size": 53,
+          "nullable": true,
+          "ordinal": 11
+        },
+        {
+          "name": "CARACTERISTICA ESPECIAL",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 12
+        },
+        {
+          "name": "PONTO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 13
+        },
+        {
+          "name": "OBSERVAÇÃO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 14
+        },
+        {
+          "name": "DT DE NASCIMENTO",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 15
+        },
+        {
+          "name": "NOME AC",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 16
+        },
+        {
+          "name": "RG AC",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 17
+        },
+        {
+          "name": "IDADE AC",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 18
+        },
+        {
+          "name": "TEL AC",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 19
+        },
+        {
+          "name": "DT DE NASCIMENTO AC",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 20
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {
+        "IDADE": [
+          "IDADE"
+        ],
+        "IDADE1": [
+          "IDADE AC"
+        ],
+        "TAB PACIENTENOME DO PACIENTE": [
+          "NOME DO PACIENTE"
+        ]
+      },
+      "amostra": [
+        {
+          "CÓDIGO DO PACIENTE": "1805",
+          "DATA DO CADASTRO": "2026-04-10 00:00:00",
+          "NOME DO PACIENTE": "CRISTINA STRAZZACAPPA",
+          "IDADE": "81",
+          "RUA": "7 DE SETEMBRO",
+          "NUMERO": "347",
+          "BAIRRO": "CENTRO",
+          "COMPLEMENTO": "ATRAS DA DELEGACIA",
+          "TELEFONE": "99753-7300",
+          "RG": "3761131",
+          "CPF": "0.0",
+          "CARACTERISTICA ESPECIAL": null,
+          "PONTO": "RESIDENCIA",
+          "OBSERVAÇÃO": null,
+          "DT DE NASCIMENTO": "1945-03-19 00:00:00",
+          "NOME AC": "SEM ACOMP",
+          "RG AC": null,
+          "IDADE AC": null,
+          "TEL AC": null,
+          "DT DE NASCIMENTO AC": null
+        },
+        {
+          "CÓDIGO DO PACIENTE": "106",
+          "DATA DO CADASTRO": "2025-12-31 00:00:00",
+          "NOME DO PACIENTE": "SERVIÇO DE SAÚDE",
+          "IDADE": null,
+          "RUA": null,
+          "NUMERO": null,
+          "BAIRRO": null,
+          "COMPLEMENTO": null,
+          "TELEFONE": null,
+          "RG": "4",
+          "CPF": "4.0",
+          "CARACTERISTICA ESPECIAL": null,
+          "PONTO": null,
+          "OBSERVAÇÃO": null,
+          "DT DE NASCIMENTO": null,
+          "NOME AC": null,
+          "RG AC": null,
+          "IDADE AC": null,
+          "TEL AC": null,
+          "DT DE NASCIMENTO AC": null
+        },
+        {
+          "CÓDIGO DO PACIENTE": "2032",
+          "DATA DO CADASTRO": "2026-04-27 00:00:00",
+          "NOME DO PACIENTE": "HADASSA VITORIA CALIXTO DA LUZ",
+          "IDADE": "14",
+          "RUA": "LUIZ NALIN",
+          "NUMERO": "218",
+          "BAIRRO": "JD ELDORADO",
+          "COMPLEMENTO": null,
+          "TELEFONE": "19.99158.9864",
+          "RG": "628399571",
+          "CPF": "519.0",
+          "CARACTERISTICA ESPECIAL": null,
+          "PONTO": null,
+          "OBSERVAÇÃO": "POSTO VILA COSMO",
+          "DT DE NASCIMENTO": "2012-04-18 00:00:00",
+          "NOME AC": "JANAINA CALIXTO DA LUZ",
+          "RG AC": null,
+          "IDADE AC": null,
+          "TEL AC": null,
+          "DT DE NASCIMENTO AC": null
+        }
+      ],
+      "campos_nulos": {
+        "NOME DO PACIENTE": 0,
+        "RUA": 2,
+        "NUMERO": 17,
+        "BAIRRO": 2,
+        "COMPLEMENTO": 2313,
+        "TELEFONE": 23,
+        "RG": 758,
+        "CARACTERISTICA ESPECIAL": 2285,
+        "PONTO": 870,
+        "OBSERVAÇÃO": 1088,
+        "NOME AC": 144,
+        "RG AC": 1452,
+        "TEL AC": 1842
+      },
+      "duplicatas": {
+        "DATA DO CADASTRO": 123,
+        "NOME DO PACIENTE": 5,
+        "IDADE": 90,
+        "RUA": 356,
+        "NUMERO": 473,
+        "BAIRRO": 135,
+        "COMPLEMENTO": 8,
+        "TELEFONE": 36,
+        "RG": 10,
+        "CARACTERISTICA ESPECIAL": 9,
+        "PONTO": 96,
+        "OBSERVAÇÃO": 80,
+        "DT DE NASCIMENTO": 134,
+        "NOME AC": 44,
+        "RG AC": 36,
+        "IDADE AC": 69,
+        "TEL AC": 11,
+        "DT DE NASCIMENTO AC": 46
+      }
+    },
+    "TB FROTAS": {
+      "registros": 35,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "FROTAS",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 2
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "Código": "1",
+          "FROTAS": "299"
+        },
+        {
+          "Código": "2",
+          "FROTAS": "274"
+        },
+        {
+          "Código": "3",
+          "FROTAS": "273"
+        }
+      ],
+      "campos_nulos": {},
+      "duplicatas": {
+        "FROTAS": 1
+      }
+    },
+    "TB LOCAL DO EAXAME": {
+      "registros": 73,
+      "colunas": [
+        {
+          "name": "CODIGO",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "LOCAL DO EXAME",
+          "type": "VARCHAR",
+          "size": 50,
+          "nullable": true,
+          "ordinal": 2
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "CODIGO": "1",
+          "LOCAL DO EXAME": "ATIBAIA-AME"
+        },
+        {
+          "CODIGO": "2",
+          "LOCAL DO EXAME": "BRAGANÇA PAULISTA DIMEN"
+        },
+        {
+          "CODIGO": "3",
+          "LOCAL DO EXAME": "CENTRO BOLDRINI"
+        }
+      ],
+      "campos_nulos": {
+        "LOCAL DO EXAME": 4
+      },
+      "duplicatas": {
+        "LOCAL DO EXAME": 2
+      }
+    },
+    "TB MOTORISTA": {
+      "registros": 51,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "MOTORISTAS",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 2
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "Código": "1",
+          "MOTORISTAS": "MARCIO"
+        },
+        {
+          "Código": "2",
+          "MOTORISTAS": "ROBERTO"
+        },
+        {
+          "Código": "3",
+          "MOTORISTAS": "WAGNER"
+        }
+      ],
+      "campos_nulos": {
+        "MOTORISTAS": 0
+      },
+      "duplicatas": {
+        "MOTORISTAS": 1
+      }
+    },
+    "TB RESULTADO DE EXAME": {
+      "registros": 1754,
+      "colunas": [
+        {
+          "name": "CODIGO",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "NOME DO PACIENTE",
+          "type": "LONGCHAR",
+          "size": 1073741823,
+          "nullable": true,
+          "ordinal": 2
+        },
+        {
+          "name": "DATA",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 3
+        },
+        {
+          "name": "LOCAL DO EXAME",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 4
+        },
+        {
+          "name": "RG",
+          "type": "VARCHAR",
+          "size": 50,
+          "nullable": true,
+          "ordinal": 5
+        },
+        {
+          "name": "DATA DA RETIRADA",
+          "type": "VARCHAR",
+          "size": 50,
+          "nullable": true,
+          "ordinal": 6
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {},
+      "amostra": [
+        {
+          "CODIGO": "221",
+          "NOME DO PACIENTE": "FRANCISCO CESAR NILTON DE LIMA",
+          "DATA": "2023-03-23 00:00:00",
+          "LOCAL DO EXAME": "5",
+          "RG": null,
+          "DATA DA RETIRADA": null
+        },
+        {
+          "CODIGO": "223",
+          "NOME DO PACIENTE": "GRAZIELA LOUREIRO IZIDORO",
+          "DATA": "2023-03-23 00:00:00",
+          "LOCAL DO EXAME": "5",
+          "RG": null,
+          "DATA DA RETIRADA": "10/05/2023"
+        },
+        {
+          "CODIGO": "472",
+          "NOME DO PACIENTE": "JAQUELINE DE GODOI BUENO",
+          "DATA": "2023-03-23 00:00:00",
+          "LOCAL DO EXAME": "5",
+          "RG": null,
+          "DATA DA RETIRADA": "19/04/2017"
+        }
+      ],
+      "campos_nulos": {
+        "NOME DO PACIENTE": 0,
+        "RG": 1676,
+        "DATA DA RETIRADA": 402
+      },
+      "duplicatas": {
+        "NOME DO PACIENTE": 130,
+        "DATA": 239,
+        "LOCAL DO EXAME": 25,
+        "RG": 2,
+        "DATA DA RETIRADA": 327
+      }
+    },
+    "TB TRANSPORTE": {
+      "registros": 19262,
+      "colunas": [
+        {
+          "name": "Código",
+          "type": "COUNTER",
+          "size": 10,
+          "nullable": false,
+          "ordinal": 1
+        },
+        {
+          "name": "DATA DA CONSULTA",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 2
+        },
+        {
+          "name": "NOME DO PACIENTE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 3
+        },
+        {
+          "name": "MOTORISTA",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 4
+        },
+        {
+          "name": "FROTA",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 5
+        },
+        {
+          "name": "DESTINO",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 6
+        },
+        {
+          "name": "OBSERVAÇÃO",
+          "type": "LONGCHAR",
+          "size": 1073741823,
+          "nullable": true,
+          "ordinal": 7
+        },
+        {
+          "name": "AC",
+          "type": "INTEGER",
+          "size": 10,
+          "nullable": true,
+          "ordinal": 8
+        },
+        {
+          "name": "ATENDENTE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 9
+        },
+        {
+          "name": "HORA DA CONSULTA",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 10
+        },
+        {
+          "name": "ESPECIALIDADE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 11
+        },
+        {
+          "name": "HORA SAIDA",
+          "type": "DATETIME",
+          "size": 19,
+          "nullable": true,
+          "ordinal": 12
+        },
+        {
+          "name": "CONDIÇÃO DO PACIENTE",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 13
+        },
+        {
+          "name": "ADMINISTRADOR",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 14
+        },
+        {
+          "name": "DIA DA SEMANA",
+          "type": "VARCHAR",
+          "size": 255,
+          "nullable": true,
+          "ordinal": 15
+        }
+      ],
+      "chave_primaria": [],
+      "indices": {
+        "TB TRANSPORTEATENDENTE": [
+          "ATENDENTE"
+        ],
+        "TB TRANSPORTECONDIÇÃO DO PACIENTE": [
+          "CONDIÇÃO DO PACIENTE"
+        ],
+        "TB TRANSPORTEDESTINO": [
+          "DESTINO"
+        ],
+        "TB TRANSPORTENOME DO PACIENTE": [
+          "NOME DO PACIENTE"
+        ]
+      },
+      "amostra": [
+        {
+          "Código": "40",
+          "DATA DA CONSULTA": "2026-01-05 00:00:00",
+          "NOME DO PACIENTE": "JOSE GUALBERTO ANSELMO",
+          "MOTORISTA": "CLAUDEMIR S.T",
+          "FROTA": null,
+          "DESTINO": "CAMPINAS/HC -RETORNO",
+          "OBSERVAÇÃO": "ONCOLOGIA AS 08:30 - RESIDÊNCIA RETORNO",
+          "AC": "1",
+          "ATENDENTE": "BRENDA",
+          "HORA DA CONSULTA": "1899-12-30 08:30:00",
+          "ESPECIALIDADE": "ONCOLOGIA",
+          "HORA SAIDA": "1899-12-30 05:01:00",
+          "CONDIÇÃO DO PACIENTE": null,
+          "ADMINISTRADOR": null,
+          "DIA DA SEMANA": "SEGUNDA"
+        },
+        {
+          "Código": "42",
+          "DATA DA CONSULTA": null,
+          "NOME DO PACIENTE": null,
+          "MOTORISTA": null,
+          "FROTA": null,
+          "DESTINO": null,
+          "OBSERVAÇÃO": null,
+          "AC": null,
+          "ATENDENTE": null,
+          "HORA DA CONSULTA": null,
+          "ESPECIALIDADE": null,
+          "HORA SAIDA": null,
+          "CONDIÇÃO DO PACIENTE": null,
+          "ADMINISTRADOR": null,
+          "DIA DA SEMANA": null
+        },
+        {
+          "Código": "43",
+          "DATA DA CONSULTA": null,
+          "NOME DO PACIENTE": null,
+          "MOTORISTA": null,
+          "FROTA": null,
+          "DESTINO": null,
+          "OBSERVAÇÃO": null,
+          "AC": null,
+          "ATENDENTE": null,
+          "HORA DA CONSULTA": null,
+          "ESPECIALIDADE": null,
+          "HORA SAIDA": null,
+          "CONDIÇÃO DO PACIENTE": null,
+          "ADMINISTRADOR": null,
+          "DIA DA SEMANA": null
+        }
+      ],
+      "campos_nulos": {
+        "NOME DO PACIENTE": 1167,
+        "MOTORISTA": 2618,
+        "DESTINO": 2291,
+        "OBSERVAÇÃO": 2294,
+        "ATENDENTE": 7319,
+        "ESPECIALIDADE": 7167,
+        "CONDIÇÃO DO PACIENTE": 14877,
+        "ADMINISTRADOR": 19262,
+        "DIA DA SEMANA": 2307
+      },
+      "duplicatas": {
+        "DATA DA CONSULTA": 153,
+        "NOME DO PACIENTE": 1714,
+        "MOTORISTA": 257,
+        "FROTA": 51,
+        "DESTINO": 328,
+        "OBSERVAÇÃO": 1184,
+        "AC": 10,
+        "ATENDENTE": 11,
+        "HORA DA CONSULTA": 171,
+        "ESPECIALIDADE": 157,
+        "HORA SAIDA": 244,
+        "CONDIÇÃO DO PACIENTE": 20,
+        "DIA DA SEMANA": 8
+      }
+    }
+  },
+  "relacionamentos": [],
+  "tabelas_prioritarias": {
+    "motoristas": [
+      "TB MOTORISTA"
+    ],
+    "veiculos": [
+      "TB FROTAS"
+    ],
+    "agendamentos": [
+      "TB TRANSPORTE"
+    ],
+    "pacientes": [
+      "TAB CONDIÇÃO DO PACIENTE",
+      "TAB PACIENTE"
+    ]
+  },
+  "qualidade_dados": {
+    "cpfs_invalidos": [],
+    "placas_invalidas": [],
+    "relacionamentos_quebrados": []
+  },
+  "sqlite_atual": {
+    "abastecimentos": 2,
+    "agendamentos": 1,
+    "faturas_terceirizados": 0,
+    "motoristas": 1,
+    "pacientes": 1,
+    "uso_veiculos": 0,
+    "usuarios": 1,
+    "veiculos": 2
+  }
+}

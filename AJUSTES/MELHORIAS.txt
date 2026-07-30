@@ -1,0 +1,3 @@
+Ajuste nos imputs http://localhost:5022/veiculos/cadastrar?aba=frota
+onde esta F00{NÚMERO DA FROTA} disponibilize assim F00{Número da Frota} e a validação deve sequir este placeholder o mesmo para o Campo
+

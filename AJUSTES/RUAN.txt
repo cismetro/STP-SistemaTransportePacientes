@@ -1,0 +1,460 @@
+https://esus.cosmopolis.sp.gov.br/transporte/pacientes/editar
+implementar a validação do CPF no Editar Paciente.
+Se possível, adicionar informações residenciais do Paciente, como: Logradouro, N*, Bairro e Ponto de Refêrencia. 
+--- OK
+https://esus.cosmopolis.sp.gov.br/transporte/pacientes/cadastrar
+implementar a validação do CPF no Cadastrar Paciente.
+implementar a validação do Cartão SUS no Cadastrar Paciente. (OBS: API se encontra gratuita.)
+---
+https://esus.cosmopolis.sp.gov.br/transporte/motoristas/editar
+implementar sistema de validação de CPF no Editar Motorista.
+Se possível, colocar informações residenciais sobre o Motorista.
+---
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+Objetivo: Implementar melhorias nos módulos de Pacientes e Motoristas do Sistema de Transporte de Pacientes, focando em validação de dados, qualidade cadastral e enriquecimento das informações dos usuários.
+
+Implementação de Melhorias Cadastrais – Sistema de Transporte de Pacientes
+Contexto
+
+O sistema necessita de melhorias nos formulários de cadastro e edição de pacientes e motoristas, visando aumentar a integridade dos dados armazenados, reduzir inconsistências cadastrais e facilitar futuras integrações com bases governamentais do SUS.
+
+O CPF é recomendado como identificador principal dos cidadãos nos sistemas de saúde, podendo ser utilizado juntamente com o Cartão Nacional de Saúde (CNS).
+
+1. Pacientes – Edição
+URL
+
+/transporte/pacientes/editar
+
+Requisitos
+1.1 Validação de CPF
+
+Implementar validação completa do CPF:
+
+Remover caracteres não numéricos automaticamente.
+Validar quantidade de dígitos (11 posições).
+Validar dígitos verificadores.
+Bloquear CPFs inválidos.
+Bloquear sequências conhecidas:
+00000000000
+11111111111
+22222222222
+etc.
+Exibir mensagem amigável ao usuário em caso de erro.
+
+Exemplo:
+
+CPF inválido. Verifique os números informados.
+1.2 Informações Residenciais do Paciente
+
+Adicionar os seguintes campos ao cadastro:
+
+Campo	Tipo	Obrigatório
+Logradouro	Texto	Sim
+Número	Texto	Sim
+Bairro	Texto	Sim
+Ponto de Referência	Texto	Não
+Regras
+Permitir edição posterior.
+Armazenar no banco de dados.
+Exibir nos detalhes do paciente.
+Preparar estrutura para futura integração com CEP.
+2. Pacientes – Cadastro
+URL
+
+/transporte/pacientes/cadastrar
+
+Requisitos
+2.1 Validação de CPF
+
+Implementar exatamente as mesmas regras descritas no item 1.1.
+
+2.2 Validação do Cartão SUS (CNS)
+
+Implementar validação do CNS:
+
+Permitir somente números.
+Validar comprimento (15 dígitos).
+Aplicar algoritmo oficial de validação do CNS.
+Exibir mensagem de erro quando inválido.
+
+Mensagem:
+
+Número do Cartão SUS inválido.
+2.3 Integração com API do Cartão SUS (Opcional)
+
+Caso a API gratuita esteja disponível:
+
+Fluxo
+Usuário informa CNS.
+Sistema consulta API.
+Dados encontrados são carregados automaticamente.
+
+Exemplos de retorno:
+
+Nome completo
+Data de nascimento
+Sexo
+Nome da mãe
+CPF
+CNS
+
+A consulta por CPF ou CNS é compatível com integrações normalmente utilizadas em ambientes e-SUS/CADSUS.
+
+Tratamento de Falhas
+API indisponível.
+CNS inexistente.
+Timeout.
+
+Exibir mensagem amigável:
+
+Não foi possível consultar os dados do Cartão SUS neste momento.
+3. Motoristas – Edição
+URL
+
+/transporte/motoristas/editar
+
+Requisitos
+3.1 Validação de CPF
+
+Implementar validação completa do CPF:
+
+Máscara automática:
+
+000.000.000-00
+Validação dos dígitos verificadores.
+Bloqueio de CPFs inválidos.
+Mensagens amigáveis de erro.
+3.2 Informações Residenciais do Motorista
+
+Adicionar os seguintes campos:
+
+Campo	Tipo	Obrigatório
+Logradouro	Texto	Sim
+Número	Texto	Sim
+Bairro	Texto	Sim
+Ponto de Referência	Texto	Não
+Regras
+Permitir edição.
+Persistir em banco de dados.
+Exibir na visualização do motorista.
+Requisitos Técnicos Gerais
+Front-end
+Máscara automática para CPF.
+Máscara automática para CNS.
+Validação em tempo real (JavaScript).
+Feedback visual:
+Verde → válido.
+Vermelho → inválido.
+Back-end
+
+Toda validação deve ser repetida no servidor.
+
+Não confiar apenas na validação do navegador.
+
+Implementar:
+
+Sanitização dos dados.
+Validação de CPF.
+Validação de CNS.
+Tratamento de exceções da API.
+Banco de Dados
+
+Criar migrações para inclusão dos novos campos:
+
+Pacientes
+logradouro
+numero
+bairro
+ponto_referencia
+Motoristas
+logradouro
+numero
+bairro
+ponto_referencia
+Critérios de Aceite
+
+✅ CPF inválido não pode ser salvo.
+
+✅ CNS inválido não pode ser salvo.
+
+✅ Campos residenciais devem ser persistidos corretamente.
+
+✅ Máscaras devem funcionar em desktop e mobile.
+
+✅ Validações devem ocorrer tanto no front-end quanto no back-end.
+
+✅ Sistema deve continuar compatível com os cadastros existentes.
+
+✅ Mensagens de erro devem ser claras e amigáveis ao usuário.
+
+Prioridade: Alta
+
+Impacto: Melhoria da qualidade dos cadastros, redução de inconsistências de dados e preparação para futuras integrações com bases do SUS.
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+NÃO IMPLEMENTE NADA AGORA VAMOS APENAS CONVERSAR OK
+https://esus.cosmopolis.sp.gov.br/transporte/veiculos/editar
+
+https://esus.cosmopolis.sp.gov.br/transporte/veiculos/cadastrar
+
+implementar sistema de validação da Placa do Veículo. (7 caracteres alfanuméricos.). (OBS: Consultar dados de veículos via API gratuitamente pode ser feito através de plataformas oficiais como o Portal de Serviços SENATRAN.)
+
+Opções de API para consulta de placas:
+Governamentais (Oficiais e Gratuitas)
+
+SENATRAN/SERPRO: Oferece integrações via API (WSDenatran), mas geralmente exige certificado digital ou convênios WSDenatran - Veículos, Condutores e Infrações - Portal Gov.br. Para consultas avulsas manuais, pode-se usar o portal do Portal de Serviços SENATRAN.
+
+Sinesp Cidadão: O app do governo permite verificar situação de roubo/furto, marca e modelo de forma gratuita Consultar Restrição de Roubo/Furto de Veículo (Sinesp).
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PROMPT PROFISSIONAL – Análise para Implementação da Validação de Placas de Veículos
+Objetivo
+
+Realizar uma análise técnica completa para implementar a funcionalidade de validação inteligente da Placa do Veículo no módulo de Transporte do sistema e-SUS, sem gerar código nesta etapa.
+
+A implementação deverá ser planejada para garantir boa experiência do usuário, modularidade, segurança, facilidade de manutenção e compatibilidade com futuras integrações governamentais.
+
+Sistema
+
+Páginas envolvidas:
+
+https://esus.cosmopolis.sp.gov.br/transporte/veiculos/cadastrar
+https://esus.cosmopolis.sp.gov.br/transporte/veiculos/editar
+
+A funcionalidade deverá estar disponível tanto na tela de cadastro quanto na tela de edição de veículos.
+
+Objetivos da funcionalidade
+
+Implementar um mecanismo que permita:
+
+validar a placa digitada pelo usuário;
+impedir placas inválidas;
+padronizar automaticamente a entrada;
+consultar informações do veículo através de APIs oficiais quando disponível;
+preencher automaticamente os campos do cadastro;
+permitir funcionamento mesmo quando a API estiver indisponível.
+Requisitos Funcionais
+
+A análise deverá contemplar, no mínimo:
+
+1. Validação da placa
+
+Avaliar a melhor estratégia para validar:
+
+quantidade de caracteres;
+somente caracteres alfanuméricos;
+conversão automática para letras maiúsculas;
+remoção automática de espaços;
+remoção de hífens;
+prevenção de caracteres especiais.
+
+Aceitar os dois padrões nacionais:
+
+Modelo antigo
+ABC1234
+Modelo Mercosul
+ABC1D23
+
+Caso a placa seja inválida:
+
+impedir consulta;
+impedir gravação;
+informar o motivo ao usuário.
+2. Consulta automática
+
+Após a placa possuir um formato válido, analisar a melhor experiência para:
+
+consultar automaticamente;
+consultar ao perder o foco (onBlur);
+consultar através de botão;
+evitar múltiplas consultas desnecessárias.
+
+Comparar vantagens e desvantagens de cada abordagem.
+
+3. APIs Oficiais
+
+Priorizar integrações governamentais.
+
+Avaliar:
+
+Portal de Serviços SENATRAN
+
+https://portalservicos.senatran.serpro.gov.br
+
+Verificar:
+
+possibilidade de integração;
+autenticação;
+certificados;
+restrições;
+documentação pública;
+limitações.
+SERPRO / WSDenatran
+
+Avaliar:
+
+necessidade de certificado digital;
+autenticação OAuth;
+convênios;
+viabilidade para uma prefeitura.
+Sinesp Cidadão
+
+Avaliar se existe API pública ou somente aplicativo oficial.
+
+Caso não exista API pública, explicar os motivos pelos quais sua utilização não deve ser automatizada.
+
+APIs alternativas
+
+Caso as APIs governamentais não possam ser utilizadas diretamente, analisar APIs comerciais ou gratuitas, considerando:
+
+confiabilidade;
+disponibilidade;
+custo;
+limites de uso;
+facilidade de integração;
+documentação.
+
+Apresentar vantagens e desvantagens de cada uma.
+
+Dados que poderão ser preenchidos automaticamente
+
+Avaliar quais campos podem ser preenchidos automaticamente.
+
+Exemplo:
+
+marca
+modelo
+versão
+ano fabricação
+ano modelo
+cor
+combustível
+categoria
+município
+UF
+espécie
+tipo
+RENAVAM (quando permitido)
+chassi parcial
+situação do veículo
+
+Também indicar quais informações não devem ser armazenadas devido à LGPD ou restrições legais.
+
+Tratamento de erros
+
+A análise deverá prever cenários como:
+
+API indisponível
+
+Timeout
+
+Sem conexão
+
+Placa inexistente
+
+Erro interno
+
+Limite de consultas
+
+Resposta inválida
+
+Autenticação expirada
+
+Falha de certificado
+
+Definir como o sistema deverá se comportar em cada situação.
+
+Segurança
+
+Analisar:
+
+proteção contra consultas excessivas;
+Rate Limit;
+cache local;
+logs;
+auditoria;
+prevenção de abuso;
+tratamento seguro dos retornos da API;
+conformidade com a LGPD.
+Experiência do Usuário (UX)
+
+Avaliar:
+
+indicador de carregamento;
+mensagens amigáveis;
+validação em tempo real;
+preenchimento automático dos campos;
+possibilidade de edição manual após consulta;
+confirmação visual de consulta realizada.
+Arquitetura
+
+Propor uma arquitetura modular.
+
+Separar responsabilidades entre:
+
+validação da placa;
+consulta externa;
+tratamento das respostas;
+preenchimento do formulário;
+tratamento de erros;
+cache;
+configuração das APIs.
+
+A arquitetura deve facilitar a substituição futura de uma API por outra sem necessidade de alterar a lógica principal do sistema.
+
+Escalabilidade
+
+Planejar a solução para permitir inclusão futura de:
+
+múltiplos provedores de consulta;
+consulta por RENAVAM;
+consulta por chassi;
+consulta por QR Code do CRLV-e;
+atualização automática de dados do veículo;
+integração com outros sistemas municipais.
+Compatibilidade
+
+A solução deverá funcionar igualmente nas telas de:
+
+Cadastro de Veículo
+Edição de Veículo
+
+Sem duplicação de lógica.
+
+Critérios de qualidade
+
+A proposta deverá priorizar:
+
+código limpo;
+modularidade;
+reutilização;
+baixo acoplamento;
+alta coesão;
+facilidade de testes;
+facilidade de manutenção;
+boa documentação.
+Importante
+
+Nesta etapa não deverá ser gerado nenhum código.
+
+O objetivo é produzir apenas uma análise técnica detalhada, identificar riscos, avaliar alternativas, definir a arquitetura recomendada e estabelecer um plano de implementação para a funcionalidade de validação e consulta de placas de veículos no sistema e-SUS. Somente após a aprovação dessa análise deverá ser iniciada a fase de desenvolvimento.
+
+-----------------------------------
+[11:04, 29/06/2026] Ruan Leopoldo Alves Barbosa: Acho que poderia adicionar mais 'categoria de HABILITAÇÃO'
+[11:04, 29/06/2026] Ruan Leopoldo Alves Barbosa: Tipo "AB" e etc...
+[11:05, 29/06/2026] Ruan Leopoldo Alves Barbosa: Tá faltando algumas categorias de habilitação, tem motorista com 'AD' e só tem B, C, D e E
+
+
+
+Feedback
+Implementação concluida com sucesso!!
+Validação de CPF para cadastro de Pacientes e Motoristas - ok
+Validação e Checagem da placa via API - Não viável a implementação pois exige custos financeiros - Não implementado
+Adição de mais categorias de CNH - ok

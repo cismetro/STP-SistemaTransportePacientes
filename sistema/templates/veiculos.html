@@ -1,0 +1,1263 @@
+{% extends "base.html" %}
+
+{% block title %}Veículos{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Veículos specific styles */
+    .filter-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    [data-bs-theme="dark"] .filter-card {
+        background: rgba(45, 45, 45, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .search-input {
+        border-radius: 2rem;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1.25rem;
+        padding-left: 3rem;
+        background: white;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(93, 92, 222, 0.25);
+        background: white;
+    }
+    
+    [data-bs-theme="dark"] .search-input {
+        background: #2d2d2d;
+        border-color: #404040;
+        color: white;
+    }
+    
+    [data-bs-theme="dark"] .search-input:focus {
+        background: #2d2d2d;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+    }
+    
+    .vehicle-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    [data-bs-theme="dark"] .vehicle-card {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+    
+    .vehicle-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        border-color: var(--primary-color);
+    }
+    
+    .vehicle-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        position: relative;
+    }
+    
+    .vehicle-icon.van {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+    }
+    
+    .vehicle-icon.micro_onibus {
+        background: linear-gradient(135deg, var(--primary-color), #4a49c4);
+    }
+    
+    .vehicle-icon.ambulancia {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .vehicle-icon.veiculo_comum {
+        background: linear-gradient(135deg, #6c757d, #545b62);
+    }
+    
+    .vehicle-status-indicator {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+    }
+    
+    .status-available {
+        background: #28a745;
+    }
+    
+    .status-maintenance {
+        background: #ffc107;
+    }
+    
+    .status-unavailable {
+        background: #dc3545;
+    }
+    
+    .status-inactive {
+        background: #6c757d;
+    }
+    
+    .vehicle-info h5 {
+        margin: 0 0 0.25rem 0;
+        font-weight: 600;
+        color: var(--bs-body-color);
+    }
+    
+    .vehicle-plate {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .vehicle-details {
+        color: var(--bs-secondary-color);
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    
+    .vehicle-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    
+    .vehicle-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .badge-acessivel {
+        background: rgba(23, 162, 184, 0.1);
+        color: var(--info-color);
+        border: 1px solid rgba(23, 162, 184, 0.3);
+    }
+    
+    .badge-manutencao {
+        background: rgba(255, 193, 7, 0.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+    
+    .badge-revisao {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+    
+    .badge-licenciamento {
+        background: rgba(255, 193, 7, 0.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+    
+    .badge-seguro {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+    
+    .badge-ativo {
+        background: rgba(40, 167, 69, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+    
+    .vehicle-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        transition: all 0.3s ease;
+        font-size: 0.875rem;
+    }
+    
+    .btn-action:hover {
+        transform: scale(1.1);
+    }
+    
+    .specs-info {
+        background: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .specs-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+    }
+    
+    .specs-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .specs-label {
+        color: var(--bs-secondary-color);
+    }
+    
+    .specs-value {
+        font-weight: 600;
+        color: var(--bs-body-color);
+    }
+    
+    .fuel-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .fuel-gasolina { background: rgba(255, 193, 7, 0.2); color: #856404; }
+    .fuel-etanol { background: rgba(40, 167, 69, 0.2); color: #155724; }
+    .fuel-diesel { background: rgba(108, 117, 125, 0.2); color: #383d41; }
+    .fuel-flex { background: rgba(23, 162, 184, 0.2); color: #0c5460; }
+    .fuel-gnv { background: rgba(93, 92, 222, 0.2); color: #2d2b7e; }
+    .fuel-eletrico { background: rgba(40, 167, 69, 0.2); color: #155724; }
+    .fuel-hibrido { background: rgba(23, 162, 184, 0.2); color: #0c5460; }
+    
+    .table-responsive {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+    
+    .table {
+        margin: 0;
+        background: white;
+    }
+    
+    [data-bs-theme="dark"] .table {
+        background: #2d2d2d;
+        color: white;
+    }
+    
+    .table th {
+        background: var(--bs-success);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-top: 1px solid var(--bs-border-color);
+    }
+    
+    .table tbody tr:hover {
+        background: rgba(40, 167, 69, 0.05);
+    }
+    
+    .filter-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-pill {
+        padding: 0.5rem 1rem;
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 2rem;
+        color: var(--bs-body-color);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    [data-bs-theme="dark"] .filter-pill {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+    
+    .filter-pill:hover,
+    .filter-pill.active {
+        background: var(--success-color);
+        border-color: var(--success-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--bs-secondary-color);
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .stats-mini {
+        background: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-mini h4 {
+        color: var(--success-color);
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .stats-mini small {
+        color: var(--bs-secondary-color);
+    }
+    
+    .warning-indicator {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--warning-color);
+        animation: pulse 2s infinite;
+    }
+    
+    .danger-indicator {
+        background: var(--danger-color);
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .maintenance-toggle {
+        background: none;
+        border: none;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        transition: all 0.3s ease;
+    }
+    
+    .maintenance-toggle:hover {
+        background: rgba(0,0,0,0.05);
+    }
+    
+    [data-bs-theme="dark"] .maintenance-toggle:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    
+    /* Mobile specific */
+    @media (max-width: 768px) {
+        .vehicle-card {
+            padding: 1rem;
+        }
+        
+        .vehicle-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        
+        .vehicle-actions {
+            margin-top: 1rem;
+            justify-content: center;
+        }
+        
+        .filter-pills {
+            justify-content: center;
+        }
+        
+        .search-input {
+            font-size: 16px; /* Prevent zoom on iOS */
+        }
+    }
+    
+    /* Loading states */
+    .skeleton-loader {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 0.375rem;
+    }
+    
+    [data-bs-theme="dark"] .skeleton-loader {
+        background: linear-gradient(90deg, #404040 25%, #505050 50%, #404040 75%);
+        background-size: 200% 100%;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .km-display {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">
+                <i class="ti ti-truck me-3"></i>
+                Veículos
+            </h1>
+            <p class="page-subtitle">Gerenciamento da frota municipal para transporte de pacientes</p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if current_user.pode_gerar_relatorios %}
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="ti ti-download me-2"></i>Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('veiculos.relatorio', formato='pdf') }}">
+                        <i class="ti ti-file-type-pdf me-2"></i>PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('veiculos.relatorio', formato='excel') }}">
+                        <i class="ti ti-file-spreadsheet me-2"></i>Excel
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('veiculos.relatorio', formato='csv') }}">
+                        <i class="ti ti-file-type-csv me-2"></i>CSV
+                    </a></li>
+                </ul>
+            </div>
+            {% endif %}
+            
+            {% if current_user.pode_gerenciar_veiculos %}
+            <a href="{{ url_for('veiculos.novo') }}" class="btn btn-success">
+                <i class="ti ti-circle-plus me-2"></i>
+                Novo Veículo
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stats-mini">
+                <h4>{{ stats.total or 0 }}</h4>
+                <small>Total</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-mini">
+                <h4>{{ stats.ativos or 0 }}</h4>
+                <small>Ativos</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-mini">
+                <h4>{{ stats.disponiveis or 0 }}</h4>
+                <small>Disponíveis</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-mini">
+                <h4>{{ stats.em_manutencao or 0 }}</h4>
+                <small>Manutenção</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alerts -->
+    {% if alertas_vencimentos %}
+    <div class="alert alert-warning alert-dismissible fade show">
+        <h6 class="alert-heading">
+            <i class="ti ti-alert-triangle me-2"></i>
+            Atenção: Documentos vencendo ou vencidos
+        </h6>
+        <p class="mb-2">{{ alertas_vencimentos|length }} veículo(s) com licenciamento ou seguro vencendo nos próximos 30 dias.</p>
+        <a href="{{ url_for('veiculos.listar', situacao='vencimentos') }}" class="btn btn-sm btn-warning">
+            Ver Detalhes
+        </a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    
+    {% if alertas_revisao %}
+    <div class="alert alert-danger alert-dismissible fade show">
+        <h6 class="alert-heading">
+            <i class="ti ti-tool me-2"></i>
+            Veículos necessitam revisão
+        </h6>
+        <p class="mb-2">{{ alertas_revisao|length }} veículo(s) precisam de revisão urgente.</p>
+        <a href="{{ url_for('veiculos.listar', situacao='revisao') }}" class="btn btn-sm btn-danger">
+            Ver Detalhes
+        </a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    
+    <!-- Filters -->
+    <div class="card filter-card">
+        <div class="card-body">
+            
+            <!-- Search Bar -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="position-relative">
+                        <i class="ti ti-search search-icon"></i>
+                        <input type="text" 
+                               class="form-control search-input" 
+                               id="searchInput"
+                               placeholder="Buscar por placa, marca, modelo..."
+                               value="{{ busca }}"
+                               autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Todos os status</option>
+                        <option value="ativo" {{ 'selected' if status == 'ativo' }}>Ativos</option>
+                        <option value="inativo" {{ 'selected' if status == 'inativo' }}>Inativos</option>
+                        <option value="disponivel" {{ 'selected' if status == 'disponivel' }}>Disponíveis</option>
+                        <option value="manutencao" {{ 'selected' if status == 'manutencao' }}>Em Manutenção</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="tipoFilter">
+                        <option value="">Todos os tipos</option>
+                        <option value="van" {{ 'selected' if tipo == 'van' }}>Van</option>
+                        <option value="micro_onibus" {{ 'selected' if tipo == 'micro_onibus' }}>Micro-ônibus</option>
+                        <option value="ambulancia" {{ 'selected' if tipo == 'ambulancia' }}>Ambulância</option>
+                        <option value="veiculo_comum" {{ 'selected' if tipo == 'veiculo_comum' }}>Veículo Comum</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="combustivelFilter">
+                        <option value="">Combustível</option>
+                        <option value="gasolina" {{ 'selected' if combustivel == 'gasolina' }}>Gasolina</option>
+                        <option value="etanol" {{ 'selected' if combustivel == 'etanol' }}>Etanol</option>
+                        <option value="diesel" {{ 'selected' if combustivel == 'diesel' }}>Diesel</option>
+                        <option value="flex" {{ 'selected' if combustivel == 'flex' }}>Flex</option>
+                        <option value="gnv" {{ 'selected' if combustivel == 'gnv' }}>GNV</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="situacaoFilter">
+                        <option value="">Situação</option>
+                        <option value="ok" {{ 'selected' if situacao == 'ok' }}>OK</option>
+                        <option value="vencimentos" {{ 'selected' if situacao == 'vencimentos' }}>Vencimentos</option>
+                        <option value="revisao" {{ 'selected' if situacao == 'revisao' }}>Precisa Revisão</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Filter Pills -->
+            <div class="filter-pills">
+                <a href="{{ url_for('veiculos.listar') }}" 
+                   class="filter-pill {{ 'active' if not status and not tipo and not situacao }}">
+                    <i class="ti ti-truck"></i>
+                    Todos
+                </a>
+                <a href="{{ url_for('veiculos.listar', status='disponivel') }}" 
+                   class="filter-pill {{ 'active' if status == 'disponivel' }}">
+                    <i class="ti ti-circle-check"></i>
+                    Disponíveis
+                </a>
+                <a href="{{ url_for('veiculos.listar', tipo='ambulancia') }}" 
+                   class="filter-pill {{ 'active' if tipo == 'ambulancia' }}">
+                    <i class="ti ti-truck"></i>
+                    Ambulâncias
+                </a>
+                <a href="{{ url_for('veiculos.listar', situacao='revisao') }}" 
+                   class="filter-pill {{ 'active' if situacao == 'revisao' }}">
+                    <i class="ti ti-tool"></i>
+                    Precisa Revisão
+                </a>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="row">
+        <div class="col-12">
+            
+            {% if veiculos.items %}
+            
+            <!-- Results Count -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-muted">
+                    Mostrando {{ veiculos.items|length }} de {{ veiculos.total }} veículos
+                </span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="viewToggle" data-view="cards">
+                        <i class="ti ti-layout-grid"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" id="viewToggleTable" data-view="table">
+                        <i class="ti ti-table"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Cards View -->
+            <div id="cardsView" class="row g-3">
+                {% for veiculo in veiculos.items %}
+                <div class="col-lg-6 col-xl-4">
+                    <div class="vehicle-card fade-in">
+                        
+                        <!-- Warning indicators -->
+                        {% if veiculo.necessita_revisao %}
+                        <div class="danger-indicator" title="Necessita revisão"></div>
+                        {% elif veiculo.licenciamento_vence_em_30_dias or veiculo.seguro_vence_em_30_dias %}
+                        <div class="warning-indicator" title="Documentos vencendo"></div>
+                        {% endif %}
+                        
+                        <div class="d-flex">
+                            <div class="vehicle-icon {{ veiculo.tipo_veiculo }}">
+                                <i class="ti ti-{{ 'ambulance' if veiculo.tipo_veiculo == 'ambulancia' else 'bus' if veiculo.tipo_veiculo == 'micro_onibus' else 'truck' if veiculo.tipo_veiculo == 'van' else 'car' }}"></i>
+                                <div class="vehicle-status-indicator status-{{ 'available' if veiculo.apto_para_uso else 'maintenance' if veiculo.em_manutencao else 'unavailable' if not veiculo.disponivel else 'inactive' }}"></div>
+                            </div>
+                            <div class="vehicle-info flex-grow-1">
+                                <h5>{{ veiculo.marca }} {{ veiculo.modelo }}</h5>
+                                <div class="vehicle-plate">{{ veiculo.placa_formatada }}</div>
+                                <div class="vehicle-details">
+                                    <div><i class="ti ti-calendar me-1"></i>{{ veiculo.ano_fabricacao }}</div>
+                                    <div><i class="ti ti-gauge me-1"></i><span class="km-display">{{ "{:,}".format(veiculo.quilometragem_atual).replace(',', '.') }} km</span></div>
+                                    <div><i class="ti ti-users me-1"></i>{{ veiculo.capacidade_passageiros }} passageiros</div>
+                                    {% if veiculo.capacidade_cadeirantes > 0 %}
+                                    <div><i class="ti ti-wheelchair me-1"></i>{{ veiculo.capacidade_cadeirantes }} cadeirantes</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Fuel Type -->
+                                <div class="mt-2">
+                                    <span class="fuel-indicator fuel-{{ veiculo.tipo_combustivel }}">
+                                        <i class="ti ti-gas-station"></i>
+                                        {{ veiculo.tipo_combustivel.title() }}
+                                    </span>
+                                </div>
+                                
+                                <!-- Specs Info -->
+                                <div class="specs-info">
+                                    <div class="specs-item">
+                                        <span class="specs-label">Licenciamento:</span>
+                                        <span class="specs-value {{ 'text-warning' if veiculo.licenciamento_vence_em_30_dias else 'text-danger' if veiculo.licenciamento_vencido else '' }}">
+                                            {{ veiculo.data_vencimento_licenciamento.strftime('%d/%m/%Y') if veiculo.data_vencimento_licenciamento }}
+                                        </span>
+                                    </div>
+                                    <div class="specs-item">
+                                        <span class="specs-label">Seguro:</span>
+                                        <span class="specs-value {{ 'text-warning' if veiculo.seguro_vence_em_30_dias else 'text-danger' if veiculo.seguro_vencido else '' }}">
+                                            {{ veiculo.data_vencimento_seguro.strftime('%d/%m/%Y') if veiculo.data_vencimento_seguro else 'Não informado' }}
+                                        </span>
+                                    </div>
+                                    {% if veiculo.data_ultima_revisao %}
+                                    <div class="specs-item">
+                                        <span class="specs-label">Última Revisão:</span>
+                                        <span class="specs-value">
+                                            {{ veiculo.data_ultima_revisao.strftime('%d/%m/%Y') }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Badges -->
+                                <div class="vehicle-badges">
+                                    {% if not veiculo.ativo %}
+                                    <span class="vehicle-badge badge-revisao">
+                                        <i class="ti ti-circle-x"></i>Inativo
+                                    </span>
+                                    {% else %}
+                                    {% if veiculo.apto_para_uso %}
+                                    <span class="vehicle-badge badge-ativo">
+                                        <i class="ti ti-circle-check"></i>Apto para Uso
+                                    </span>
+                                    {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if veiculo.em_manutencao %}
+                                    <span class="vehicle-badge badge-manutencao">
+                                        <i class="ti ti-tool"></i>Em Manutenção
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if veiculo.acessibilidade_total %}
+                                    <span class="vehicle-badge badge-acessivel">
+                                        <i class="ti ti-accessible"></i>Acessível
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if veiculo.necessita_revisao %}
+                                    <span class="vehicle-badge badge-revisao">
+                                        <i class="ti ti-alert-triangle"></i>Precisa Revisão
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="vehicle-actions">
+                            <a href="{{ url_for('veiculos.visualizar', id=veiculo.id) }}" 
+                               class="btn btn-action btn-outline-success"
+                               title="Visualizar">
+                                <i class="ti ti-eye"></i>
+                            </a>
+                            {% if current_user.pode_gerenciar_veiculos %}
+                            <a href="{{ url_for('veiculos.editar', id=veiculo.id) }}" 
+                               class="btn btn-action btn-outline-warning"
+                               title="Editar">
+                                <i class="ti ti-pencil"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.pode_criar_agendamentos %}
+                            <a href="{{ url_for('agendamentos.novo', veiculo_id=veiculo.id) }}" 
+                               class="btn btn-action btn-outline-primary"
+                               title="Novo Agendamento">
+                                <i class="ti ti-calendar-plus"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.pode_gerenciar_veiculos %}
+                            <button class="maintenance-toggle"
+                                    onclick="toggleMaintenance({{ veiculo.id }}, {{ veiculo.em_manutencao|lower }})"
+                                    title="{{ 'Retirar da manutenção' if veiculo.em_manutencao else 'Colocar em manutenção' }}">
+                                <i class="ti ti-{{ 'tool text-warning' if veiculo.em_manutencao else 'circle-check text-success' }}"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Table View -->
+            <div id="tableView" class="table-responsive" style="display: none;">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Veículo</th>
+                            <th>Placa</th>
+                            <th>Tipo</th>
+                            <th>Capacidade</th>
+                            <th>Combustível</th>
+                            <th>Status</th>
+                            <th width="150">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for veiculo in veiculos.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="vehicle-icon {{ veiculo.tipo_veiculo }} me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                        <i class="ti ti-{{ 'ambulance' if veiculo.tipo_veiculo == 'ambulancia' else 'bus' if veiculo.tipo_veiculo == 'micro_onibus' else 'truck' if veiculo.tipo_veiculo == 'van' else 'car' }}"></i>
+                                        <div class="vehicle-status-indicator status-{{ 'available' if veiculo.apto_para_uso else 'maintenance' if veiculo.em_manutencao else 'unavailable' }}" style="width: 12px; height: 12px;"></div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ veiculo.marca }} {{ veiculo.modelo }}</div>
+                                        <small class="text-muted">{{ veiculo.ano_fabricacao }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="vehicle-plate">{{ veiculo.placa_formatada }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if veiculo.tipo_veiculo == 'van' else 'primary' if veiculo.tipo_veiculo == 'micro_onibus' else 'danger' if veiculo.tipo_veiculo == 'ambulancia' else 'secondary' }}">
+                                    {{ veiculo.tipo_veiculo.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <div>{{ veiculo.capacidade_passageiros }} passageiros</div>
+                                {% if veiculo.capacidade_cadeirantes > 0 %}
+                                <small class="text-muted">{{ veiculo.capacidade_cadeirantes }} cadeirantes</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fuel-indicator fuel-{{ veiculo.tipo_combustivel }}">
+                                    <i class="ti ti-gas-station"></i>
+                                    {{ veiculo.tipo_combustivel.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <i class="ti ti-circle-filled {{ 'text-success' if veiculo.apto_para_uso else 'text-warning' if veiculo.em_manutencao else 'text-danger' }} me-1"></i>
+                                {{ 'Apto' if veiculo.apto_para_uso else 'Manutenção' if veiculo.em_manutencao else 'Indisponível' }}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('veiculos.visualizar', id=veiculo.id) }}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Visualizar">
+                                        <i class="ti ti-eye"></i>
+                                    </a>
+                                    {% if current_user.pode_gerenciar_veiculos %}
+                                    <a href="{{ url_for('veiculos.editar', id=veiculo.id) }}" 
+                                       class="btn btn-sm btn-outline-warning"
+                                       title="Editar">
+                                        <i class="ti ti-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if current_user.pode_criar_agendamentos %}
+                                    <a href="{{ url_for('agendamentos.novo', veiculo_id=veiculo.id) }}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Novo Agendamento">
+                                        <i class="ti ti-calendar-plus"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if veiculos.pages > 1 %}
+            <nav aria-label="Navegação de páginas" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if veiculos.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('veiculos.listar', page=veiculos.prev_num, busca=busca, status=status, tipo=tipo, combustivel=combustivel, situacao=situacao) }}">
+                            <i class="ti ti-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in veiculos.iter_pages() %}
+                    {% if page_num %}
+                    {% if page_num != veiculos.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('veiculos.listar', page=page_num, busca=busca, status=status, tipo=tipo, combustivel=combustivel, situacao=situacao) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">…</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if veiculos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('veiculos.listar', page=veiculos.next_num, busca=busca, status=status, tipo=tipo, combustivel=combustivel, situacao=situacao) }}">
+                            <i class="ti ti-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            
+            <!-- Empty State -->
+            <div class="empty-state">
+                <i class="ti ti-truck"></i>
+                <h4>{{ 'Nenhum veículo encontrado' if busca or status or tipo or situacao else 'Nenhum veículo cadastrado' }}</h4>
+                <p class="mb-3">
+                    {% if busca or status or tipo or situacao %}
+                    Tente ajustar os filtros de busca para encontrar veículos.
+                    {% else %}
+                    Comece cadastrando o primeiro veículo da frota.
+                    {% endif %}
+                </p>
+                
+                {% if not busca and not status and not tipo and not situacao and current_user.pode_gerenciar_veiculos %}
+                <a href="{{ url_for('veiculos.novo') }}" class="btn btn-success">
+                    <i class="ti ti-circle-plus me-2"></i>
+                    Cadastrar Primeiro Veículo
+                </a>
+                {% elif busca or status or tipo or situacao %}
+                <a href="{{ url_for('veiculos.listar') }}" class="btn btn-outline-success">
+                    <i class="ti ti-arrow-left me-2"></i>
+                    Limpar Filtros
+                </a>
+                {% endif %}
+            </div>
+            
+            {% endif %}
+            
+        </div>
+    </div>
+    
+</div>
+
+<!-- Maintenance Modal -->
+<div class="modal fade" id="maintenanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alterar Status de Manutenção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="maintenanceMessage"></p>
+                <div id="maintenanceReason" style="display: none;">
+                    <label for="motivoManutencao" class="form-label">Motivo da manutenção:</label>
+                    <textarea class="form-control" id="motivoManutencao" rows="3" placeholder="Descreva o tipo de manutenção..."></textarea>
+                </div>
+                <div id="maintenanceDetails" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="kmManutencao" class="form-label">Quilometragem atual:</label>
+                            <input type="number" class="form-control" id="kmManutencao" placeholder="Ex: 50000">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="previsaoRetorno" class="form-label">Previsão de retorno:</label>
+                            <input type="date" class="form-control" id="previsaoRetorno">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmMaintenanceChange">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const tipoFilter = document.getElementById('tipoFilter');
+    const combustivelFilter = document.getElementById('combustivelFilter');
+    const situacaoFilter = document.getElementById('situacaoFilter');
+    
+    let searchTimeout;
+    
+    function performSearch() {
+        const params = new URLSearchParams();
+        
+        if (searchInput.value.trim()) {
+            params.set('busca', searchInput.value.trim());
+        }
+        
+        if (statusFilter.value) {
+            params.set('status', statusFilter.value);
+        }
+        
+        if (tipoFilter.value) {
+            params.set('tipo', tipoFilter.value);
+        }
+        
+        if (combustivelFilter.value) {
+            params.set('combustivel', combustivelFilter.value);
+        }
+        
+        if (situacaoFilter.value) {
+            params.set('situacao', situacaoFilter.value);
+        }
+        
+        const url = new URL(window.location.href);
+        url.search = params.toString();
+        
+        window.location.href = url.toString();
+    }
+    
+    // Search input with debounce
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 500);
+    });
+    
+    // Filter selects
+    statusFilter.addEventListener('change', performSearch);
+    tipoFilter.addEventListener('change', performSearch);
+    combustivelFilter.addEventListener('change', performSearch);
+    situacaoFilter.addEventListener('change', performSearch);
+    
+    // View toggle
+    const viewToggle = document.getElementById('viewToggle');
+    const viewToggleTable = document.getElementById('viewToggleTable');
+    const cardsView = document.getElementById('cardsView');
+    const tableView = document.getElementById('tableView');
+    
+    viewToggle.addEventListener('click', function() {
+        cardsView.style.display = 'block';
+        tableView.style.display = 'none';
+        viewToggle.classList.add('btn-success');
+        viewToggle.classList.remove('btn-outline-secondary');
+        viewToggleTable.classList.add('btn-outline-secondary');
+        viewToggleTable.classList.remove('btn-success');
+        localStorage.setItem('vehiclesView', 'cards');
+    });
+    
+    viewToggleTable.addEventListener('click', function() {
+        cardsView.style.display = 'none';
+        tableView.style.display = 'block';
+        viewToggleTable.classList.add('btn-success');
+        viewToggleTable.classList.remove('btn-outline-secondary');
+        viewToggle.classList.add('btn-outline-secondary');
+        viewToggle.classList.remove('btn-success');
+        localStorage.setItem('vehiclesView', 'table');
+    });
+    
+    // Load saved view preference
+    const savedView = localStorage.getItem('vehiclesView');
+    if (savedView === 'table') {
+        viewToggleTable.click();
+    }
+    
+    // Maintenance toggle functionality
+    let currentVehicleId = null;
+    let currentMaintenanceStatus = null;
+    
+    window.toggleMaintenance = function(vehicleId, isInMaintenance) {
+        currentVehicleId = vehicleId;
+        currentMaintenanceStatus = isInMaintenance;
+        
+        const modal = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+        const message = document.getElementById('maintenanceMessage');
+        const reasonDiv = document.getElementById('maintenanceReason');
+        const detailsDiv = document.getElementById('maintenanceDetails');
+        const confirmBtn = document.getElementById('confirmMaintenanceChange');
+        
+        if (!isInMaintenance) {
+            message.textContent = 'Tem certeza que deseja colocar este veículo em manutenção?';
+            reasonDiv.style.display = 'block';
+            detailsDiv.style.display = 'block';
+            confirmBtn.className = 'btn btn-warning';
+            confirmBtn.textContent = 'Colocar em Manutenção';
+        } else {
+            message.textContent = 'Tem certeza que deseja retirar este veículo da manutenção?';
+            reasonDiv.style.display = 'none';
+            detailsDiv.style.display = 'none';
+            confirmBtn.className = 'btn btn-success';
+            confirmBtn.textContent = 'Retirar da Manutenção';
+        }
+        
+        modal.show();
+    };
+    
+    // Confirm maintenance change
+    document.getElementById('confirmMaintenanceChange').addEventListener('click', function() {
+        if (!currentVehicleId) return;
+        
+        const motivo = document.getElementById('motivoManutencao').value.trim();
+        const km = document.getElementById('kmManutencao').value;
+        const previsao = document.getElementById('previsaoRetorno').value;
+        
+        if (!currentMaintenanceStatus && !motivo) {
+            showToast('Por favor, informe o motivo da manutenção.', 'warning');
+            return;
+        }
+        
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
+        
+        const data = {
+            em_manutencao: !currentMaintenanceStatus
+        };
+        
+        if (!currentMaintenanceStatus) {
+            if (motivo) data.motivo_manutencao = motivo;
+            if (km) data.quilometragem_manutencao = parseInt(km);
+            if (previsao) data.previsao_retorno = previsao;
+        }
+        
+        fetch(`${SCRIPT_ROOT}/veiculos/${currentVehicleId}/manutencao`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showToast(data.error || 'Erro ao alterar status de manutenção', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Erro de conexão', 'danger');
+        })
+        .finally(() => {
+            this.disabled = false;
+            this.textContent = currentMaintenanceStatus ? 'Retirar da Manutenção' : 'Colocar em Manutenção';
+            bootstrap.Modal.getInstance(document.getElementById('maintenanceModal')).hide();
+        });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+        
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            searchInput.value = '';
+            searchInput.blur();
+            if (new URLSearchParams(window.location.search).has('busca')) {
+                performSearch();
+            }
+        }
+    });
+    
+    // Auto-focus search on page load if no results
+    {% if not veiculos.items and not busca %}
+    if (searchInput) {
+        searchInput.focus();
+    }
+    {% endif %}
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Export functionality
+    document.querySelectorAll('.dropdown-menu a[href*="relatorio"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            showLoading();
+            
+            const url = new URL(this.href);
+            // Add current filters to export
+            if (searchInput.value.trim()) {
+                url.searchParams.set('busca', searchInput.value.trim());
+            }
+            if (statusFilter.value) {
+                url.searchParams.set('status', statusFilter.value);
+            }
+            if (tipoFilter.value) {
+                url.searchParams.set('tipo', tipoFilter.value);
+            }
+            if (combustivelFilter.value) {
+                url.searchParams.set('combustivel', combustivelFilter.value);
+            }
+            if (situacaoFilter.value) {
+                url.searchParams.set('situacao', situacaoFilter.value);
+            }
+            
+            // Create temporary link for download
+            const tempLink = document.createElement('a');
+            tempLink.href = url.toString();
+            tempLink.download = '';
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+            
+            hideLoading();
+        });
+    });
+    
+    // Maintenance/revision warning notification
+    const warningIndicators = document.querySelectorAll('.warning-indicator, .danger-indicator');
+    if (warningIndicators.length > 0) {
+        showToast(`⚠️ ${warningIndicators.length} veículo(s) com pendências de manutenção ou documentação`, 'warning');
+    }
+    
+    // Format km display with animation
+    const kmDisplays = document.querySelectorAll('.km-display');
+    kmDisplays.forEach(display => {
+        const value = parseInt(display.textContent.replace(/\D/g, ''));
+        if (value > 100000) {
+            display.style.color = '#dc3545'; // Red for high mileage
+            display.title = 'Quilometragem alta - considere revisão';
+        } else if (value > 50000) {
+            display.style.color = '#ffc107'; // Yellow for medium mileage
+        }
+    });
+    
+});
+</script>
+{% endblock %}
+
