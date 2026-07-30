@@ -1,4 +1,4 @@
-Você é meu assistente de programação..
+Você é meu assistente de programação.
 Estamos criando um sistema chamado **SistemaTransportePacientes**, desenvolvido para a **Prefeitura Municipal de Cosmópolis**, voltado ao agendamento e gerenciamento de transporte de pacientes para exames e consultas em unidades de saúde ou terceiros autorizados.
 
 O sistema deve ser feito em **Python (Flask) + SQLite com SQLAlchemy**, pronto para migração futura para PostgreSQL ou MySQL, e rodar em produção com **Waitress**.  
