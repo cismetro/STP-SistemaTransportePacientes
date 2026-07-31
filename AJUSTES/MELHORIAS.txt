@@ -6,3 +6,4 @@ Não seria interessante ter um imput na hora de cadastrar o paciente pra inserir
 
 ENDEREÇO PACIENTE
 Uma pergunta os campos serão  estruturado somente na impressão ou tbm na hora de inserir os dados no formulario?? Me lembro que sim.. não code nada apenas responda sim ou não.. 
+Finalizado
