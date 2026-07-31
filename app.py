@@ -6838,10 +6838,15 @@ def _html_um_cartao_motorista(d, indice=1):
             <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">{frota}</span></div>
           </div>
           <div class="cm-top-right">
-            <div class="cm-ln cm-ln-inline">
-              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">{d['data_consulta']}</span>
-              <span class="sp"></span>
-              <span class="lb">HORA DE SAIDA:</span> <span class="vl">{d['hora_saida']}</span>
+            <div class="cm-ln cm-data-hora">
+              <span class="cm-campo">
+                <span class="lb">DATA DA CONSULTA:</span>
+                <span class="vl">{d['data_consulta']}</span>
+              </span>
+              <span class="cm-campo cm-campo-hora">
+                <span class="lb">HORA DE SAIDA:</span>
+                <span class="vl">{d['hora_saida']}</span>
+              </span>
             </div>
             <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">{d['destino']}</span></div>
           </div>
@@ -6883,10 +6888,10 @@ def _html_um_cartao_motorista(d, indice=1):
 
         <div class="cm-sep"></div>
 
-        <div class="cm-ln cm-ln-spread">
-          <span><span class="lb">OBSERVACAO:</span></span>
-          <span><span class="lb">PONTO:</span> <span class="vl">{ponto}</span></span>
-          <span><span class="lb">ATENDENTE:</span> <span class="vl">{d['atendente']}</span></span>
+        <div class="cm-ln cm-ln-spread cm-ln-rodape">
+          <span class="cm-rodape-item"><span class="lb">OBSERVACAO:</span></span>
+          <span class="cm-rodape-item"><span class="lb">PONTO:</span> <span class="vl">{ponto}</span></span>
+          <span class="cm-rodape-item cm-rodape-dir"><span class="lb">ATENDENTE:</span> <span class="vl">{d['atendente']}</span></span>
         </div>
 
         <div class="cm-obs-bloco">
@@ -6952,12 +6957,47 @@ def css_cartoes_motorista():
     font-size: 11px;
   }
   .cm-ln-inline { flex-wrap: nowrap; }
+  .cm-data-hora {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px 16px;
+  }
+  .cm-campo {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .cm-campo-hora {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
   .cm-ln-spread {
     justify-content: space-between;
     gap: 6px 12px;
     margin-top: 1px;
   }
   .cm-ln-spread > span { min-width: 0; }
+  .cm-ln-rodape {
+    align-items: baseline;
+    gap: 8px 16px;
+  }
+  .cm-rodape-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .cm-rodape-dir {
+    justify-content: flex-end;
+    text-align: right;
+  }
 
   .sp { display: inline-block; width: 14px; }
 
