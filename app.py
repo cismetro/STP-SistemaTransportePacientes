@@ -212,6 +212,7 @@ class Paciente(db.Model):
     bairro = db.Column(db.String(100))
     complemento = db.Column(db.String(200))
     ponto_referencia = db.Column(db.String(200))
+    ponto_embarque = db.Column(db.String(200))
     cartao_sus = db.Column(db.String(20))
     observacoes = db.Column(db.Text)
     # Condição especial (só quando toggle ligado)
@@ -2086,6 +2087,7 @@ def migrar_paciente_novos_campos():
             'bairro': 'VARCHAR(100)',
             'complemento': 'VARCHAR(200)',
             'ponto_referencia': 'VARCHAR(200)',
+            'ponto_embarque': 'VARCHAR(200)',
             'condicao_especial': 'BOOLEAN DEFAULT 0 NOT NULL',
             'condicao_paciente': 'VARCHAR(120)',
             'condicao_outros': 'VARCHAR(255)',
@@ -2095,6 +2097,18 @@ def migrar_paciente_novos_campos():
                 with db.engine.begin() as conn:
                     conn.execute(text(f'ALTER TABLE pacientes ADD COLUMN {col} {tipo}'))
                 print(f'✅ Coluna {col} criada em pacientes')
+        # Compatibilidade: copia ponto_referencia → ponto_embarque quando legado
+        cols2 = [c['name'] for c in inspect(db.engine).get_columns('pacientes')]
+        if 'ponto_embarque' in cols2 and 'ponto_referencia' in cols2:
+            with db.engine.begin() as conn:
+                r = conn.execute(text(
+                    "UPDATE pacientes SET ponto_embarque = ponto_referencia "
+                    "WHERE (ponto_embarque IS NULL OR TRIM(ponto_embarque) = '') "
+                    "AND ponto_referencia IS NOT NULL AND TRIM(ponto_referencia) != ''"
+                ))
+                n = r.rowcount if r.rowcount is not None and r.rowcount >= 0 else 0
+                if n:
+                    print(f'✅ ponto_embarque preenchido a partir de ponto_referencia em {n} paciente(s)')
     except Exception as e:
         print(f'⚠️ Migração pacientes: {e}')
 
@@ -5252,6 +5266,19 @@ def endereco_paciente_para_campos(paciente):
     }
 
 
+def ponto_embarque_do_paciente(paciente):
+    """
+    Ponto de embarque para impressão/cadastro.
+    Prioriza ponto_embarque; fallback legado em ponto_referencia.
+    """
+    if not paciente:
+        return ''
+    pe = (getattr(paciente, 'ponto_embarque', None) or '').strip()
+    if pe:
+        return pe
+    return (getattr(paciente, 'ponto_referencia', None) or '').strip()
+
+
 def montar_origem_do_paciente(paciente):
     """Monta origem a partir do endereço cadastrado do paciente (quando origem fica em branco)."""
     if not paciente:
@@ -6670,9 +6697,11 @@ def montar_dados_cartao_motorista(
         bairro = end.get('bairro') or ''
         complemento = end.get('complemento') or ''
 
-    ponto = parse_campo_observacao_cartao(
-        agendamento.observacoes, ('OBSERVAÇÃO PONTO:', 'OBS PONTO:', 'PONTO:')
-    ) or (paciente.ponto_referencia if paciente else '') or ''
+    ponto = ponto_embarque_do_paciente(paciente)
+    if not ponto:
+        ponto = parse_campo_observacao_cartao(
+            agendamento.observacoes, ('OBSERVAÇÃO PONTO:', 'OBS PONTO:', 'PONTO:')
+        ) or ''
 
     hora_consulta = ''
     if getattr(agendamento, 'hora_consulta', None):
@@ -7323,6 +7352,7 @@ def garantir_agendamento_demo_cartao_motorista():
                 numero=v['num'],
                 bairro=v['bairro'],
                 ponto_referencia='POSTO COSMÓPOLIS',
+                ponto_embarque='POSTO COSMÓPOLIS',
                 ativo=True,
                 condicao_especial=bool(v['cond']),
                 condicao_paciente=v['cond'] or None,
@@ -8135,13 +8165,14 @@ def gerar_html_impressao_pacientes(pacientes_lista, filtros):
         f'{k}: {v}' for k, v in filtros.items() if v
     ) or 'Todos os pacientes ativos (conforme filtros)'
 
-    cabecalhos = ('Nome', 'Idade', 'CPF', 'Tel Cel', 'Tel Resi', 'Condição', 'Nascimento', 'Endereço')
+    cabecalhos = ('Nome', 'Idade', 'CPF', 'Tel Cel', 'Tel Resi', 'Condição', 'Nascimento', 'Endereço', 'Ponto de Embarque')
 
     def linha(p):
         cel, res = telefones_paciente_form(p)
         condicao = formatar_condicao_paciente_exibir(p)
         idade_txt = formatar_idade_exibir(p.data_nascimento) if p.data_nascimento else '—'
         nasc = p.data_nascimento.strftime('%d/%m/%Y') if p.data_nascimento else '—'
+        ponto = ponto_embarque_do_paciente(p) or '—'
         return f'''
         <tr>
             <td>{escape(p.nome)}</td>
@@ -8152,6 +8183,7 @@ def gerar_html_impressao_pacientes(pacientes_lista, filtros):
             <td>{escape(condicao)}</td>
             <td>{nasc}</td>
             <td>{escape(p.endereco or '—')}</td>
+            <td>{escape(ponto)}</td>
         </tr>
         '''
 
@@ -10634,6 +10666,7 @@ def create_app():
                         ('Tel. Cel', esc_html(tel_cel)),
                         ('Tel. Res', esc_html(tel_res)),
                         ('Condição', condicao_html),
+                        ('Ponto de Embarque', esc_html(ponto_embarque_do_paciente(paciente) or '—')),
                         ('Cadastro', data_cad),
                     ],
                     acoes_html=acoes,
@@ -10698,14 +10731,17 @@ def create_app():
                     data_nascimento = request.form.get('data_nascimento')
                     cep = request.form.get('cep', '').strip()
                     logradouro, numero, bairro, complemento, endereco = montar_endereco_paciente_de_form(request.form)
-                    ponto_referencia = request.form.get('ponto_referencia', '').strip()
+                    ponto_embarque = (
+                        request.form.get('ponto_embarque', '').strip()
+                        or request.form.get('ponto_referencia', '').strip()
+                    )
                     cartao_sus = request.form.get('cns', '').strip()
                     observacoes = request.form.get('observacoes', '').strip()
                     ok_cond, erro_cond, dados_cond = extrair_condicao_paciente_form(request.form)
                     
                     # Validação básica
-                    if not all([nome, cpf, data_nascimento, logradouro, numero]):
-                        flash('Por favor, preencha todos os campos obrigatórios (inclui logradouro e número)!', 'error')
+                    if not all([nome, cpf, data_nascimento, logradouro, numero, ponto_embarque]):
+                        flash('Por favor, preencha todos os campos obrigatórios (inclui logradouro, número e ponto de embarque)!', 'error')
                         return redirect(url_for('pacientes_cadastrar'))
                     if not tel_cel and not tel_res:
                         flash('Informe pelo menos um telefone (celular ou residencial)!', 'error')
@@ -10752,7 +10788,7 @@ def create_app():
                         numero=numero if numero else None,
                         bairro=bairro if bairro else None,
                         complemento=complemento if complemento else None,
-                        ponto_referencia=ponto_referencia if ponto_referencia else None,
+                        ponto_embarque=ponto_embarque,
                         cartao_sus=cartao_sus if cartao_sus else None,
                         observacoes=observacoes if observacoes else None
                     )
@@ -10886,8 +10922,9 @@ def create_app():
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="ponto_referencia">Ponto de Referência</label>
-                                <input type="text" id="ponto_referencia" name="ponto_referencia" placeholder="Ex: Próximo ao hospital..."
+                                <label for="ponto_embarque">Ponto de Embarque <span class="required-mark" aria-hidden="true">*</span></label>
+                                <input type="text" id="ponto_embarque" name="ponto_embarque" required
+                                       placeholder="Informe o ponto de embarque do paciente"
                                        style="text-transform:uppercase;"
                                        oninput="this.value=this.value.toLocaleUpperCase('pt-BR')">
                             </div>
@@ -11045,13 +11082,16 @@ def create_app():
                 data_nascimento = request.form.get('data_nascimento')
                 cep = request.form.get('cep', '').strip()
                 logradouro, numero, bairro, complemento, endereco = montar_endereco_paciente_de_form(request.form)
-                ponto_referencia = request.form.get('ponto_referencia', '').strip()
+                ponto_embarque = (
+                    request.form.get('ponto_embarque', '').strip()
+                    or request.form.get('ponto_referencia', '').strip()
+                )
                 cartao_sus = request.form.get('cns', '').strip()
                 observacoes = request.form.get('observacoes', '').strip()
                 ok_cond, erro_cond, dados_cond = extrair_condicao_paciente_form(request.form)
                 
-                if not all([nome, cpf, data_nascimento, logradouro, numero]):
-                    flash('Por favor, preencha todos os campos obrigatórios (inclui logradouro e número)!', 'error')
+                if not all([nome, cpf, data_nascimento, logradouro, numero, ponto_embarque]):
+                    flash('Por favor, preencha todos os campos obrigatórios (inclui logradouro, número e ponto de embarque)!', 'error')
                     return redirect(url_for('pacientes_editar', paciente_id=paciente_id))
                 if not tel_cel and not tel_res:
                     flash('Informe pelo menos um telefone (celular ou residencial)!', 'error')
@@ -11095,7 +11135,7 @@ def create_app():
                 paciente.numero = numero if numero else None
                 paciente.bairro = bairro if bairro else None
                 paciente.complemento = complemento if complemento else None
-                paciente.ponto_referencia = ponto_referencia if ponto_referencia else None
+                paciente.ponto_embarque = ponto_embarque
                 paciente.cartao_sus = cartao_sus if cartao_sus else None
                 paciente.observacoes = observacoes if observacoes else None
                 aplicar_condicao_paciente(paciente, dados_cond)
@@ -11221,8 +11261,10 @@ def create_app():
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="ponto_referencia">Ponto de Referência</label>
-                            <input type="text" id="ponto_referencia" name="ponto_referencia" value="{paciente.ponto_referencia or ''}" placeholder="Ex: Próximo ao hospital..."
+                            <label for="ponto_embarque">Ponto de Embarque <span class="required-mark" aria-hidden="true">*</span></label>
+                            <input type="text" id="ponto_embarque" name="ponto_embarque" required
+                                   value="{html_esc(ponto_embarque_do_paciente(paciente))}"
+                                   placeholder="Informe o ponto de embarque do paciente"
                                    style="text-transform:uppercase;"
                                    oninput="this.value=this.value.toLocaleUpperCase('pt-BR')">
                         </div>
@@ -11483,6 +11525,7 @@ def create_app():
             'numero': end['numero'],
             'bairro': end['bairro'],
             'endereco': paciente.endereco or '',
+            'ponto_embarque': ponto_embarque_do_paciente(paciente),
             'necessita_acompanhante': paciente_necessita_acompanhante(paciente),
         })
 
@@ -15112,6 +15155,7 @@ def create_app():
                     'tel_res': tel_res,
                     'condicao': formatar_condicao_paciente_exibir(p),
                     'endereco': p.endereco,
+                    'ponto_embarque': ponto_embarque_do_paciente(p) or '-',
                     'cartao_sus': p.cartao_sus or '-',
                     'total_agendamentos': total_agendamentos,
                     'data_cadastro': p.data_cadastro.strftime('%d/%m/%Y'),
@@ -15207,6 +15251,7 @@ def create_app():
                     ('Tel Res', html_esc(p["tel_res"])),
                     ('Condição', html_esc(p["condicao"])),
                     ('Endereço', html_esc(p["endereco"])),
+                    ('Ponto de Embarque', html_esc(p["ponto_embarque"])),
                     ('Cartão SUS', html_esc(p["cartao_sus"])),
                     ('Agendamentos', str(p["total_agendamentos"])),
                     ('Cadastro', html_esc(p["data_cadastro"])),
@@ -15331,6 +15376,7 @@ def create_app():
                                 <th>Tel Resi</th>
                                 <th>Condição</th>
                                 <th>Endereço</th>
+                                <th>Ponto de Embarque</th>
                                 <th>Cartão SUS</th>
                                 <th>Total Agendamentos</th>
                                 <th>Data Cadastro</th>
@@ -15346,6 +15392,7 @@ def create_app():
                                 <td>{p["tel_res"]}</td>
                                 <td>{p["condicao"]}</td>
                                 <td>{p["endereco"][:40]}{'...' if len(p["endereco"]) > 40 else ''}</td>
+                                <td>{p["ponto_embarque"]}</td>
                                 <td>{p["cartao_sus"]}</td>
                                 <td>{p["total_agendamentos"]}</td>
                                 <td>{p["data_cadastro"]}</td>

@@ -56,6 +56,7 @@ def garantir_paciente(i: int, pacientes_existentes: list) -> Paciente:
         numero=str(100 + i),
         bairro='CENTRO',
         ponto_referencia='POSTO COSMÓPOLIS',
+        ponto_embarque='POSTO COSMÓPOLIS',
         ativo=True,
     )
     db.session.add(pac)
