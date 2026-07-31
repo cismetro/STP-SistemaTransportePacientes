@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Folha Espelho — 10 registro(s)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000; background: #d0d0d0; font-size: 10px;
+  }
+  .toolbar {
+    max-width: 297mm; margin: 0 auto 10px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .toolbar a, .toolbar button {
+    border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer;
+    font-size: 13px; text-decoration: none; color: #fff;
+  }
+  .btn-print { background: #2e7d32; }
+  .btn-back { background: #546e7a; }
+  .toolbar .info { font-size: 12.5px; color: #222; }
+
+  .fe-pagina {
+    max-width: 297mm; margin: 0 auto 12px; background: #fff;
+    padding: 5mm 5mm 4mm;
+    display: flex; flex-direction: column;
+  }
+  .fe-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+  }
+  .fe-titulo {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    flex: 1 1 auto;
+    text-align: left;
+  }
+  .fe-topo-data {
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    text-align: right;
+  }
+  .fe-cab {
+    display: grid;
+    grid-template-columns: 1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr;
+    gap: 2px 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 9px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin-bottom: 1px;
+  }
+  .fe-registros { flex: 1 1 auto; }
+  .fe-bloco {
+    border-bottom: 1px solid #000;
+    padding: 2px 0 3px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .fe-l1 {
+    display: grid;
+    grid-template-columns: 1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr;
+    gap: 2px 4px;
+    align-items: start;
+  }
+  .fe-l2 {
+    display: grid;
+    grid-template-columns: 1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr;
+    gap: 2px 4px;
+    margin-top: 1px;
+    align-items: baseline;
+  }
+  .fe-l2-tel { grid-column: 1 / 4; }
+  .fe-l2-rua { grid-column: 4 / 6; }
+  .fe-l2-trat { grid-column: 6 / 10; }
+  .fe-l3 {
+    display: grid;
+    grid-template-columns: 1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr;
+    gap: 2px 4px;
+    margin-top: 1px;
+    align-items: baseline;
+  }
+  .fe-l3-at { grid-column: 1 / 4; }
+  .fe-l3-ac {
+    grid-column: 5 / 10;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+    align-items: baseline;
+  }
+  .fe-lab {
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 9px;
+  }
+  .fe-v {
+    font-weight: 400 !important;
+    text-transform: uppercase;
+    font-size: 10px;
+    word-break: break-word;
+  }
+  .fe-b {
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 10px;
+    word-break: break-word;
+  }
+  .fe-rodape {
+    margin-top: 4px;
+    padding-top: 3px;
+    border-top: 1px solid #000;
+    font-size: 9px;
+    color: #222;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .fe-rodape-dir { white-space: nowrap; }
+  .fe-vazio {
+    text-align: center; padding: 40px 16px; color: #444;
+    background: #fff; max-width: 297mm; margin: 0 auto;
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; margin: 0; }
+    .toolbar, .no-print { display: none !important; }
+    .fe-pagina {
+      max-width: none; margin: 0; padding: 0;
+      page-break-after: always;
+      break-after: page;
+    }
+    .fe-pagina:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+    @page { size: A4 landscape; margin: 6mm 5mm; }
+    .fe-bloco { page-break-inside: avoid; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button class="btn-print" type="button" onclick="window.print()">Imprimir Folha Espelho (A4 paisagem)</button>
+    <a class="btn-back" href="/agendamentos">Voltar</a>
+    <span class="info">10 programado(s) · 10/página · Todos os registros (conforme filtros ativos)</span>
+  </div>
+  
+        <section class="fe-pagina">
+          
+    <div class="fe-topo">
+      <h1 class="fe-titulo">LISTA DE CONTROLE DE PACIENTES</h1>
+      <div class="fe-topo-data">DATA 31/07/2026  SEXTA</div>
+    </div>
+    
+          <div class="fe-cab">
+            <span>MOTORISTA LEVA</span>
+            <span>FROTA:</span>
+            <span>H. SAIDA:</span>
+            <span>DESTINO:</span>
+            <span>NOME DO PACIENTE:</span>
+            <span>IDADE:</span>
+            <span>AC:</span>
+            <span>H. CONSULTA</span>
+            <span>PONTO:</span>
+          </div>
+    
+          <div class="fe-registros">
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">MARCIO DOS SANTOS CAMARGO</strong></span>
+        <span class="fe-c"><strong class="fe-b">262</strong></span>
+        <span class="fe-c"><strong class="fe-b">13:00:00</strong></span>
+        <span class="fe-c"><span class="fe-v">CAMPINAS/HC</span></span>
+        <span class="fe-c"><strong class="fe-b">ADRIANA NERES DA ROCHA</strong></span>
+        <span class="fe-c"><span class="fe-v">227</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b"></strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(99) 2167-902</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">AV DOS TRABALHADORES, 518, CHICO MENDES</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Consulta Médica - RESIDENCIA - CARTA MEDICA | RESIDENCIA</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b"></strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">MARCIO DOS SANTOS CAMARGO</strong></span>
+        <span class="fe-c"><strong class="fe-b">42</strong></span>
+        <span class="fe-c"><strong class="fe-b">07:00:00</strong></span>
+        <span class="fe-c"><span class="fe-v">SANTA BARBARA D&#x27;OESTE/AME</span></span>
+        <span class="fe-c"><strong class="fe-b">FLORIZE DE MATTOS</strong></span>
+        <span class="fe-c"><span class="fe-v">7250</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b"></strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(99) 8355-656</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">RAMOS DE AZEVEDO, 1630, JD FAVERI</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Consulta Médica - RESIDENCIA</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b"></strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">MARCIO DOS SANTOS CAMARGO</strong></span>
+        <span class="fe-c"><strong class="fe-b">NI FROTA 20 - F00020</strong></span>
+        <span class="fe-c"><strong class="fe-b">07:10:00</strong></span>
+        <span class="fe-c"><span class="fe-v">CAMPINAS/AME</span></span>
+        <span class="fe-c"><strong class="fe-b">ANA LEMOS DA CRUZ</strong></span>
+        <span class="fe-c"><span class="fe-v">7243</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b"></strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(99) 3230-075</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">PEDRO SUZAN, 129, ANDORINHAS</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Consulta Médica - RESIDENCIA</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b"></strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">CLAUDEMIR S.T</strong></span>
+        <span class="fe-c"><strong class="fe-b">NI Frota Teste 888 - F00888</strong></span>
+        <span class="fe-c"><strong class="fe-b">11:11:00</strong></span>
+        <span class="fe-c"><span class="fe-v">UNICAMP</span></span>
+        <span class="fe-c"><strong class="fe-b">ADILSON VALLERIO</strong></span>
+        <span class="fe-c"><span class="fe-v">64</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b"></strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(98) 2432-154</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">PAULO FREDERICO ROGGER, 84, PQ ESTER</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Exame - POSTO COSMOPOLIS 1</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b"></strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">MARCIO DOS SANTOS CAMARGO</strong></span>
+        <span class="fe-c"><strong class="fe-b">NI Frota Teste Imp - F00100</strong></span>
+        <span class="fe-c"><strong class="fe-b">06:00:00</strong></span>
+        <span class="fe-c"><span class="fe-v">Hospital Estadual — Campinas/SP</span></span>
+        <span class="fe-c"><strong class="fe-b">CRISTINA STRAZZACAPPA</strong></span>
+        <span class="fe-c"><span class="fe-v">81</span></span>
+        <span class="fe-c"><span class="fe-v">1</span></span>
+        <span class="fe-c"><strong class="fe-b">08:00:00</strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(99) 7537-300</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">7 DE SETEMBRO, 347, CENTRO, ATRAS DA DELEGACIA</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Cardiologia - RESIDENCIA</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">JULIANA</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">ACOMPANHANTE TESTE 01</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b">198800001111</strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">ROBERTO RUFINO DE AGUILAR</strong></span>
+        <span class="fe-c"><strong class="fe-b">19</strong></span>
+        <span class="fe-c"><strong class="fe-b">06:07:00</strong></span>
+        <span class="fe-c"><span class="fe-v">Santa Casa — Campinas/SP</span></span>
+        <span class="fe-c"><strong class="fe-b">SERVIÇO DE SAÚDE</strong></span>
+        <span class="fe-c"><span class="fe-v">126</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b">08:11:00</strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(19) 0000-0000</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">Cosmópolis-SP</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Ortopedia</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">JULIANA</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">WAGNER LUIZ ALVES</strong></span>
+        <span class="fe-c"><strong class="fe-b">21</strong></span>
+        <span class="fe-c"><strong class="fe-b">06:14:00</strong></span>
+        <span class="fe-c"><span class="fe-v">Hospital Regional — Campinas/SP</span></span>
+        <span class="fe-c"><strong class="fe-b">HADASSA VITORIA CALIXTO DA LUZ</strong></span>
+        <span class="fe-c"><span class="fe-v">14</span></span>
+        <span class="fe-c"><span class="fe-v">1</span></span>
+        <span class="fe-c"><strong class="fe-b">08:22:00</strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(19) 99158-9864</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">LUIZ NALIN, 218, JD ELDORADO</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Pediatria - POSTO VILA COSMO</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">JULIANA</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">ACOMPANHANTE TESTE 03</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b">198800021111</strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">ROGERIO RUFINO DE AGUILAR</strong></span>
+        <span class="fe-c"><strong class="fe-b">NI Frota Teste Imp - F00100</strong></span>
+        <span class="fe-c"><strong class="fe-b">06:21:00</strong></span>
+        <span class="fe-c"><span class="fe-v">HC Unicamp — Campinas/SP</span></span>
+        <span class="fe-c"><strong class="fe-b">CICERO DOS SANTOS SILVA</strong></span>
+        <span class="fe-c"><span class="fe-v">68</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b">08:33:00</strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(99) 2525-943</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">JURANDIR DA CUNHA NABÃO, 63, PANEIRAS</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Neurologia - VEM NO POSTO</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">JULIANA</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">DANIEL ALVES LIMA DE OLIVEIRA</strong></span>
+        <span class="fe-c"><strong class="fe-b">24</strong></span>
+        <span class="fe-c"><strong class="fe-b">07:28:00</strong></span>
+        <span class="fe-c"><span class="fe-v">Clínica Hemodiálise — Limeira/SP</span></span>
+        <span class="fe-c"><strong class="fe-b">JOSÉ ANTONIO AMBROSIO</strong></span>
+        <span class="fe-c"><span class="fe-v">70</span></span>
+        <span class="fe-c"><span class="fe-v">1</span></span>
+        <span class="fe-c"><strong class="fe-b">09:44:00</strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(97) 1251-052</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">CORONEL SILVA TELLES, 607, BAGUÁ</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Hemodiálise - RODOVIÁRIA | RODOVIÁRIA | NORMAL</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">JULIANA</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">ACOMPANHANTE TESTE 05</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b">198800041111</strong></span>
+        </span>
+      </div>
+    </div>
+    
+    <div class="fe-bloco">
+      <div class="fe-l1">
+        <span class="fe-c"><strong class="fe-b">UMBERTO ROCHA MASSOLLA</strong></span>
+        <span class="fe-c"><strong class="fe-b">33</strong></span>
+        <span class="fe-c"><strong class="fe-b">07:35:00</strong></span>
+        <span class="fe-c"><span class="fe-v">CAPS — Cosmópolis/SP</span></span>
+        <span class="fe-c"><strong class="fe-b">MARTA LEME DE SOUZA</strong></span>
+        <span class="fe-c"><span class="fe-v">126</span></span>
+        <span class="fe-c"><span class="fe-v">0</span></span>
+        <span class="fe-c"><strong class="fe-b">09:55:00</strong></span>
+        <span class="fe-c"><span class="fe-v">RESIDÊNCIA</span></span>
+      </div>
+      <div class="fe-l2">
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">(99) 50983-6997</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">NARCIZO DARIO ANDRETTO, 295, ANDORINHAS</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">Oftalmologia</span></span>
+      </div>
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">JULIANA</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">SEM ACOMP</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b"></strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b"></strong></span>
+        </span>
+      </div>
+    </div>
+    </div>
+          
+    <footer class="fe-rodape">
+      <span>Sexta-Feira, 31 de Julho de 2026</span>
+      <span>Página 1 de 1</span>
+      <span class="fe-rodape-dir">HORARIO <span class="fe-horario-impressao">--:--:--</span></span>
+    </footer>
+    
+        </section>
+  <script>
+  (function () {
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function atualizarHorarioImpressao() {
+      var agora = new Date();
+      var txt = pad(agora.getHours()) + ':' + pad(agora.getMinutes()) + ':' + pad(agora.getSeconds());
+      document.querySelectorAll('.fe-horario-impressao').forEach(function (el) {
+        el.textContent = txt;
+      });
+    }
+    atualizarHorarioImpressao();
+    window.addEventListener('beforeprint', atualizarHorarioImpressao);
+    setInterval(atualizarHorarioImpressao, 15000);
+  })();
+  </script>
+</body>
+</html>

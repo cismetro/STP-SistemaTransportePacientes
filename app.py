@@ -6419,7 +6419,106 @@ def agendamento_elegivel_folha_espelho(agendamento):
     return agendamento_elegivel_cartao_motorista(agendamento)
 
 
-def montar_dados_cartao_motorista(agendamento, numero_viagem=None):
+# Partículas ignoradas na abreviação do nome do motorista (só impressão).
+_PARTICULAS_NOME_MOTORISTA = frozenset({'DE', 'DA', 'DAS', 'DO', 'DOS', 'E'})
+# Larguras úteis (px) para caber em 1 linha — Arial bold na impressão.
+LARGURA_MOTORISTA_FOLHA_PX = 138
+LARGURA_MOTORISTA_CARTAO_PX = 200
+
+
+def _partes_significativas_nome_motorista(nome):
+    """Retorna tokens significativos (sem de/da/do/dos/das/e), preservando ordem."""
+    partes = [p for p in str(nome or '').strip().split() if p]
+    return [p for p in partes if p.upper() not in _PARTICULAS_NOME_MOTORISTA]
+
+
+def candidatos_abreviacao_nome_motorista(nome):
+    """
+    Lista progressiva de formas do nome (menos → mais abreviado).
+    Nível 0: completo; 1: meios em inicial + último completo;
+    2: só iniciais após o primeiro; 3: primeiro + inicial do último.
+    """
+    nome_limpo = ' '.join(str(nome or '').strip().split())
+    if not nome_limpo:
+        return ['']
+
+    sig = _partes_significativas_nome_motorista(nome_limpo)
+    candidatos = [nome_limpo]
+    if len(sig) <= 1:
+        return candidatos
+
+    primeiro = sig[0]
+    ultimo = sig[-1]
+    meios = sig[1:-1]
+
+    # Nível 1 — MARCIO S. CAMARGO / RENATO F.T. MENEZES
+    if meios:
+        iniciais_meio = ''.join(f'{m[0].upper()}.' for m in meios if m)
+        nivel1 = f'{primeiro} {iniciais_meio} {ultimo}'.strip()
+        if nivel1 not in candidatos:
+            candidatos.append(nivel1)
+    # Sem meios: nada a enxugar no nível 1 além do completo
+
+    # Nível 2 — MARCIO S.C. / RENATO F.T.M.
+    resto = meios + [ultimo]
+    iniciais = ''.join(f'{r[0].upper()}.' for r in resto if r)
+    nivel2 = f'{primeiro} {iniciais}'.strip()
+    if nivel2 not in candidatos:
+        candidatos.append(nivel2)
+
+    # Nível 3 — primeiro + inicial do último (último recurso)
+    nivel3 = f'{primeiro} {ultimo[0].upper()}.'
+    if nivel3 not in candidatos:
+        candidatos.append(nivel3)
+
+    return candidatos
+
+
+def medir_largura_texto_impressao_px(texto, font_size_px=10, bold=True):
+    """
+    Largura aproximada do texto na fonte da impressão (Arial).
+    Prefere métrica real via TrueType do Windows; fallback heurístico.
+    """
+    texto = str(texto or '')
+    if not texto:
+        return 0.0
+    try:
+        from PIL import ImageFont
+        font_name = 'arialbd.ttf' if bold else 'arial.ttf'
+        font_path = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts', font_name)
+        if not os.path.isfile(font_path):
+            font_path = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts', 'arial.ttf')
+        font = ImageFont.truetype(font_path, int(font_size_px))
+        if hasattr(font, 'getlength'):
+            return float(font.getlength(texto))
+        bbox = font.getbbox(texto)
+        return float(bbox[2] - bbox[0])
+    except Exception:
+        # Heurística Arial uppercase bold ≈ 0.62em por caractere
+        fator = 0.62 if bold else 0.55
+        return float(len(texto) * font_size_px * fator)
+
+
+def abreviar_nome_motorista_impressao(
+    nome, max_largura_px, font_size_px=10, bold=True
+):
+    """
+    Escolhe a forma mais completa do nome que caiba em max_largura_px.
+    Não altera cadastro — uso exclusivo na renderização de impressão.
+    """
+    candidatos = candidatos_abreviacao_nome_motorista(nome)
+    if not candidatos:
+        return ''
+    escolhido = candidatos[-1]
+    for cand in candidatos:
+        if medir_largura_texto_impressao_px(cand, font_size_px, bold) <= float(max_largura_px):
+            return cand
+    return escolhido
+
+
+def montar_dados_cartao_motorista(
+    agendamento, numero_viagem=None, max_largura_motorista_px=None
+):
     """Monta dicionário com todos os campos do Cartão do Motorista (modelo oficial)."""
     from html import escape
 
@@ -6537,8 +6636,22 @@ def montar_dados_cartao_motorista(agendamento, numero_viagem=None):
     def _v(val):
         return escape(str(val).strip()) if val not in (None, '', '—') else ''
 
+    nome_motorista_completo = (motorista.nome if motorista else '') or ''
+    limiar_px = (
+        LARGURA_MOTORISTA_CARTAO_PX
+        if max_largura_motorista_px is None
+        else max_largura_motorista_px
+    )
+    nome_motorista_impressao = abreviar_nome_motorista_impressao(
+        nome_motorista_completo,
+        max_largura_px=limiar_px,
+        font_size_px=11 if limiar_px >= LARGURA_MOTORISTA_CARTAO_PX else 10,
+        bold=True,
+    )
+
     return {
-        'motorista': _v(motorista.nome if motorista else ''),
+        'motorista': _v(nome_motorista_impressao),
+        'motorista_completo': _v(nome_motorista_completo),
         'frota': _v(frota),
         'placa': _v(placa),
         'data_consulta': agendamento.data.strftime('%d/%m/%Y') if agendamento.data else '',
@@ -6591,7 +6704,7 @@ def _html_um_cartao_motorista(d, indice=1):
 
         <div class="cm-top">
           <div class="cm-top-left">
-            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl">{d['motorista']}</span></div>
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="{d.get('motorista_completo') or d['motorista']}">{d['motorista']}</span></div>
             <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">{frota}</span></div>
           </div>
           <div class="cm-top-right">
@@ -6733,6 +6846,11 @@ def css_cartoes_motorista():
     text-transform: uppercase;
     word-break: break-word;
     font-size: 11.5px;
+  }
+  .vl-mot {
+    white-space: nowrap;
+    overflow: hidden;
+    word-break: normal;
   }
   .vl-pac { font-size: 12px; font-weight: 800; }
 
@@ -7417,27 +7535,20 @@ def query_agendamentos_programados(filtros):
     )
 
 
-_DIAS_SEMANA_PT = (
-    'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira',
-    'Sexta-feira', 'Sábado', 'Domingo',
-)
-_MESES_PT = (
-    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-)
 FOLHA_ESPELHO_REGISTROS_POR_PAGINA = 10
+_DIAS_CURTO_FOLHA = (
+    'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO', 'DOMINGO',
+)
 
 
 def formatar_data_lista_controle(data_ref):
-    """Retorna (dd/mm/aaaa, dia_semana, 'Quinta-feira, 23 de julho de 2026')."""
+    """Retorna (dd/mm/aaaa, dia curto SEXTA, data por extenso)."""
     if not data_ref:
         return '', '', ''
-    dia_semana = _DIAS_SEMANA_PT[data_ref.weekday()]
+    dia_curto = _DIAS_CURTO_FOLHA[data_ref.weekday()]
     data_br = data_ref.strftime('%d/%m/%Y')
-    data_extenso = (
-        f'{dia_semana}, {data_ref.day} de {_MESES_PT[data_ref.month - 1]} de {data_ref.year}'
-    )
-    return data_br, dia_semana, data_extenso
+    data_extenso = format_data_extenso_pt(data_ref)
+    return data_br, dia_curto, data_extenso
 
 
 def data_referencia_folha_espelho(agendamentos):
@@ -7447,7 +7558,6 @@ def data_referencia_folha_espelho(agendamentos):
         return None
     if all(d == datas[0] for d in datas):
         return datas[0]
-    # Múltiplas datas no filtro: usa a mais frequente; empate → menor data
     from collections import Counter
     contagem = Counter(datas)
     mais = contagem.most_common()
@@ -7457,9 +7567,11 @@ def data_referencia_folha_espelho(agendamentos):
 
 
 def montar_dados_folha_espelho(agendamento):
-    """Campos da Folha Espelho / Lista de Controle de Pacientes."""
+    """Campos da Folha Espelho (AJUSTES/DoJeitoQuePreciso.jpg)."""
     from html import escape
-    d = montar_dados_cartao_motorista(agendamento)
+    d = montar_dados_cartao_motorista(
+        agendamento, max_largura_motorista_px=LARGURA_MOTORISTA_FOLHA_PX
+    )
     paciente = agendamento.paciente
     rua = d.get('rua') or ''
     numero = d.get('numero') or ''
@@ -7477,158 +7589,241 @@ def montar_dados_folha_espelho(agendamento):
         **d,
         'rua_completa': rua_completa,
         'tratamento': tratamento,
-        'ac_nome_exibir': d['ac_nome'] if tem_ac else '',
+        'ac_nome_exibir': d['ac_nome'] if tem_ac else 'SEM ACOMP',
         'ac_idade_exibir': d.get('ac_idade') or '',
         'ac_tel_exibir': d.get('ac_tel') or '',
-        'ponto_exibir': ponto or '',
+        'ponto_exibir': ponto or 'RESIDÊNCIA',
     }
+
+
+def _html_cabecalho_colunas_folha_espelho():
+    """Subtítulos oficiais — idênticos a DoJeitoQuePreciso.jpg."""
+    return """
+          <div class="fe-cab">
+            <span>MOTORISTA LEVA</span>
+            <span>FROTA:</span>
+            <span>H. SAIDA:</span>
+            <span>DESTINO:</span>
+            <span>NOME DO PACIENTE:</span>
+            <span>IDADE:</span>
+            <span>AC:</span>
+            <span>H. CONSULTA</span>
+            <span>PONTO:</span>
+          </div>"""
 
 
 def _html_bloco_folha_espelho(d):
     """
-    Um registro da Lista de Controle.
-    Títulos em negrito (<strong> + .fe-lab); valores em fonte normal (.fe-v).
-    Nome Ac. / Telefone Ac. só quando houver acompanhante.
+    Registro em 3 linhas sob as colunas do modelo oficial.
+    Linha 1 = só valores (alinhados aos subtítulos).
+    Linha 2 = TEL / RUA / tratamento.
+    Linha 3 = ATENDENTE / NOME AC / IDADE AC / TEL AC.
+    Negrito nos valores: Motorista, Frota, H. Saída, Nome Paciente,
+    H. Consulta, Atendente, Nome Ac., Idade Ac., Telefone Ac.
     """
     frota = d.get('frota') or d.get('placa') or ''
-    linha_ac = ''
-    if d.get('tem_ac'):
-        linha_ac = f"""
-      <div class="fe-l2">
-        <span><strong class="fe-lab">Nome Ac.:</strong> <span class="fe-v">{d.get('ac_nome_exibir') or ''}</span></span>
-        <span><strong class="fe-lab">Telefone Ac.:</strong> <span class="fe-v">{d.get('ac_tel_exibir') or ''}</span></span>
-      </div>"""
     return f"""
     <div class="fe-bloco">
       <div class="fe-l1">
-        <span><strong class="fe-lab">Nome do Motorista:</strong> <span class="fe-v">{d.get('motorista') or ''}</span></span>
-        <span><strong class="fe-lab">Frota:</strong> <span class="fe-v">{frota}</span></span>
-        <span><strong class="fe-lab">H. Saída:</strong> <span class="fe-v">{d.get('hora_saida') or ''}</span></span>
+        <span class="fe-c fe-mot"><strong class="fe-b" title="{d.get('motorista_completo') or d.get('motorista') or ''}">{d.get('motorista') or ''}</strong></span>
+        <span class="fe-c"><strong class="fe-b">{frota}</strong></span>
+        <span class="fe-c"><strong class="fe-b">{d.get('hora_saida') or ''}</strong></span>
+        <span class="fe-c"><span class="fe-v">{d.get('destino') or ''}</span></span>
+        <span class="fe-c"><strong class="fe-b">{d.get('paciente_nome') or ''}</strong></span>
+        <span class="fe-c"><span class="fe-v">{d.get('idade') or ''}</span></span>
+        <span class="fe-c"><span class="fe-v">{d.get('ac_flag') or '0'}</span></span>
+        <span class="fe-c"><strong class="fe-b">{d.get('hora_consulta') or ''}</strong></span>
+        <span class="fe-c"><span class="fe-v">{d.get('ponto_exibir') or ''}</span></span>
       </div>
       <div class="fe-l2">
-        <span><strong class="fe-lab">Nome do Paciente:</strong> <span class="fe-v">{d.get('paciente_nome') or ''}</span></span>
-        <span><strong class="fe-lab">H. Consulta:</strong> <span class="fe-v">{d.get('hora_consulta') or ''}</span></span>
-        <span><strong class="fe-lab">Atendente:</strong> <span class="fe-v">{d.get('atendente') or ''}</span></span>
+        <span class="fe-l2-tel"><strong class="fe-lab">TEL</strong> <span class="fe-v">{d.get('tel') or ''}</span></span>
+        <span class="fe-l2-rua"><strong class="fe-lab">RUA:</strong> <span class="fe-v">{d.get('rua_completa') or ''}</span></span>
+        <span class="fe-l2-trat"><span class="fe-v">{d.get('tratamento') or ''}</span></span>
       </div>
-      {linha_ac}
+      <div class="fe-l3">
+        <span class="fe-l3-at"><strong class="fe-lab">ATENDENTE</strong> <strong class="fe-b">{d.get('atendente') or ''}</strong></span>
+        <span class="fe-l3-ac">
+          <span><strong class="fe-lab">NOME AC:</strong> <strong class="fe-b">{d.get('ac_nome_exibir') or ''}</strong></span>
+          <span><strong class="fe-lab">IDADE AC:</strong> <strong class="fe-b">{d.get('ac_idade_exibir') or ''}</strong></span>
+          <span><strong class="fe-lab">TEL AC:</strong> <strong class="fe-b">{d.get('ac_tel_exibir') or ''}</strong></span>
+        </span>
+      </div>
     </div>
     """
 
 
 def css_folha_espelho():
-    """CSS Lista de Controle de Pacientes — A4 paisagem, 10 registros/página."""
-    return """
-  * { box-sizing: border-box; }
-  body {
+    """CSS fiel a AJUSTES/DoJeitoQuePreciso.jpg — A4 paisagem, 10/página."""
+    cols = '1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr'
+    return f"""
+  * {{ box-sizing: border-box; }}
+  body {{
     margin: 0; padding: 10px;
     font-family: Arial, Helvetica, sans-serif;
-    color: #000; background: #d0d0d0; font-size: 11px;
-  }
-  .toolbar {
+    color: #000; background: #d0d0d0; font-size: 10px;
+  }}
+  .toolbar {{
     max-width: 297mm; margin: 0 auto 10px;
     display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-  }
-  .toolbar a, .toolbar button {
+  }}
+  .toolbar a, .toolbar button {{
     border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer;
     font-size: 13px; text-decoration: none; color: #fff;
-  }
-  .btn-print { background: #2e7d32; }
-  .btn-back { background: #546e7a; }
-  .toolbar .info { font-size: 12.5px; color: #222; }
+  }}
+  .btn-print {{ background: #2e7d32; }}
+  .btn-back {{ background: #546e7a; }}
+  .toolbar .info {{ font-size: 12.5px; color: #222; }}
 
-  .fe-pagina {
+  .fe-pagina {{
     max-width: 297mm; margin: 0 auto 12px; background: #fff;
-    padding: 8mm 7mm 6mm;
+    padding: 5mm 5mm 4mm;
     display: flex; flex-direction: column;
-    min-height: 190mm;
-  }
-  .fe-titulo {
-    text-align: center;
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+  }}
+  .fe-topo {{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+  }}
+  .fe-titulo {{
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
-    margin: 0 0 4px;
-  }
-  .fe-subtitulo-data {
-    text-align: center;
+    flex: 1 1 auto;
+    text-align: left;
+  }}
+  .fe-topo-data {{
+    font-weight: 700;
     font-size: 12px;
-    font-weight: 600;
-    margin: 0 0 8px;
-  }
-  .fe-registros { flex: 1 1 auto; }
-  .fe-bloco {
-    border-bottom: 1px solid #333;
-    padding: 4px 0 5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    text-align: right;
+  }}
+  .fe-cab {{
+    display: grid;
+    grid-template-columns: {cols};
+    gap: 2px 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 9px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+    margin-bottom: 1px;
+  }}
+  .fe-registros {{ flex: 1 1 auto; }}
+  .fe-bloco {{
+    border-bottom: 1px solid #000;
+    padding: 2px 0 3px;
     page-break-inside: avoid;
     break-inside: avoid;
-  }
-  .fe-l1, .fe-l2 {
-    display: flex; flex-wrap: wrap; gap: 2px 14px;
-    align-items: baseline;
+  }}
+  .fe-l1 {{
+    display: grid;
+    grid-template-columns: {cols};
+    gap: 2px 4px;
+    align-items: start;
+  }}
+  .fe-mot {{
+    white-space: nowrap;
+    overflow: hidden;
+  }}
+  .fe-mot .fe-b {{
+    white-space: nowrap;
+  }}
+  .fe-l2 {{
+    display: grid;
+    grid-template-columns: {cols};
+    gap: 2px 4px;
     margin-top: 1px;
-  }
-  .fe-lab {
+    align-items: baseline;
+  }}
+  .fe-l2-tel {{ grid-column: 1 / 4; }}
+  .fe-l2-rua {{ grid-column: 4 / 6; }}
+  .fe-l2-trat {{ grid-column: 6 / 10; }}
+  .fe-l3 {{
+    display: grid;
+    grid-template-columns: {cols};
+    gap: 2px 4px;
+    margin-top: 1px;
+    align-items: baseline;
+  }}
+  .fe-l3-at {{ grid-column: 1 / 4; }}
+  .fe-l3-ac {{
+    grid-column: 5 / 10;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+    align-items: baseline;
+  }}
+  .fe-lab {{
     font-weight: 700 !important;
-    font-size: 10.5px;
-  }
-  strong.fe-lab {
-    font-weight: 700 !important;
-  }
-  .fe-v {
+    text-transform: uppercase;
+    font-size: 9px;
+  }}
+  .fe-v {{
     font-weight: 400 !important;
     text-transform: uppercase;
-    font-size: 11px;
+    font-size: 10px;
     word-break: break-word;
-  }
-  .fe-rodape {
-    margin-top: 8px;
-    padding-top: 6px;
-    border-top: 1px solid #999;
-    font-size: 9.5px;
-    color: #333;
-    line-height: 1.35;
-  }
-  .fe-rodape-aviso {
-    font-style: italic;
-    color: #555;
-    margin-bottom: 3px;
-  }
-  .fe-rodape-meta { font-weight: 500; }
-  .fe-vazio {
-    text-align: center; padding: 40px 16px;
-    font-family: Arial, Helvetica, sans-serif; color: #444;
+  }}
+  .fe-b {{
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 10px;
+    word-break: break-word;
+  }}
+  .fe-rodape {{
+    margin-top: 4px;
+    padding-top: 3px;
+    border-top: 1px solid #000;
+    font-size: 9px;
+    color: #222;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }}
+  .fe-rodape-dir {{ white-space: nowrap; }}
+  .fe-vazio {{
+    text-align: center; padding: 40px 16px; color: #444;
     background: #fff; max-width: 297mm; margin: 0 auto;
-  }
+  }}
 
-  @media print {
-    body { background: #fff; padding: 0; margin: 0; }
-    .toolbar, .no-print { display: none !important; }
-    .fe-pagina {
+  @media print {{
+    body {{ background: #fff; padding: 0; margin: 0; }}
+    .toolbar, .no-print {{ display: none !important; }}
+    .fe-pagina {{
       max-width: none; margin: 0; padding: 0;
-      min-height: 0;
       page-break-after: always;
       break-after: page;
-    }
-    .fe-pagina:last-child {
+    }}
+    .fe-pagina:last-child {{
       page-break-after: auto;
       break-after: auto;
-    }
-    @page { size: A4 landscape; margin: 8mm 7mm; }
-    .fe-bloco { page-break-inside: avoid; break-inside: avoid; }
-  }
+    }}
+    @page {{ size: A4 landscape; margin: 6mm 5mm; }}
+    .fe-bloco {{ page-break-inside: avoid; break-inside: avoid; }}
+  }}
 """
 
 
 def _html_cabecalho_folha_espelho(data_br, dia_semana):
-    data_linha = ''
+    data_txt = ''
     if data_br:
-        data_linha = f'Data: {data_br}'
+        data_txt = f'DATA {data_br}'
         if dia_semana:
-            data_linha += f' – {dia_semana}'
+            data_txt += f'  {dia_semana}'
     return f"""
-    <h1 class="fe-titulo">LISTA DE CONTROLE DE PACIENTES</h1>
-    <div class="fe-subtitulo-data">{data_linha}</div>
+    <div class="fe-topo">
+      <h1 class="fe-titulo">LISTA DE CONTROLE DE PACIENTES</h1>
+      <div class="fe-topo-data">{data_txt}</div>
+    </div>
+    {_html_cabecalho_colunas_folha_espelho()}
     """
 
 
@@ -7637,14 +7832,9 @@ def _html_rodape_folha_espelho(data_extenso, pagina_atual, total_paginas):
     meta = escape(data_extenso or '')
     return f"""
     <footer class="fe-rodape">
-      <div class="fe-rodape-aviso">
-        Estes dados são apenas para teste. O sistema deverá imprimir automaticamente
-        a data e o horário reais da impressão.
-      </div>
-      <div class="fe-rodape-meta">
-        {meta} | Página {pagina_atual} de {total_paginas}
-        | Horário: <span class="fe-horario-impressao">--:--</span>
-      </div>
+      <span>{meta}</span>
+      <span>Página {pagina_atual} de {total_paginas}</span>
+      <span class="fe-rodape-dir">HORARIO <span class="fe-horario-impressao">--:--:--</span></span>
     </footer>
     """
 
@@ -7653,8 +7843,8 @@ def gerar_html_impressao_agendamentos(
     agendamentos_lista, filtros, pagina_ini, pagina_fim, per_page, href_voltar=None
 ):
     """
-    Folha Espelho / Lista de Controle de Pacientes.
-    10 registros por página; cabeçalho e rodapé em cada página.
+    Folha Espelho oficial (AJUSTES/DoJeitoQuePreciso.jpg).
+    10 registros por página; grade de colunas; 3 linhas por registro.
     """
     try:
         from flask import url_for, has_request_context
@@ -7677,7 +7867,7 @@ def gerar_html_impressao_agendamentos(
     if not elegiveis:
         corpo = """
         <div class="fe-vazio">
-          <h2>Lista de Controle indisponível</h2>
+          <h2>Folha Espelho indisponível</h2>
           <p>Nenhum agendamento com motorista e veículo programados nesta seleção.</p>
           <p>Conclua a programação (Programar) e tente novamente.</p>
         </div>"""
@@ -7704,12 +7894,12 @@ def gerar_html_impressao_agendamentos(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lista de Controle de Pacientes — {qtd} registro(s)</title>
+<title>Folha Espelho — {qtd} registro(s)</title>
 <style>{css_folha_espelho()}</style>
 </head>
 <body>
   <div class="toolbar no-print">
-    <button class="btn-print" type="button" onclick="window.print()">Imprimir Lista de Controle (A4 paisagem)</button>
+    <button class="btn-print" type="button" onclick="window.print()">Imprimir Folha Espelho (A4 paisagem)</button>
     <a class="btn-back" href="{href_voltar}">{rotulo_voltar}</a>
     <span class="info">{qtd} programado(s) · 10/página · {resumo}</span>
   </div>
@@ -7719,7 +7909,7 @@ def gerar_html_impressao_agendamentos(
     function pad(n) {{ return String(n).padStart(2, '0'); }}
     function atualizarHorarioImpressao() {{
       var agora = new Date();
-      var txt = pad(agora.getHours()) + ':' + pad(agora.getMinutes());
+      var txt = pad(agora.getHours()) + ':' + pad(agora.getMinutes()) + ':' + pad(agora.getSeconds());
       document.querySelectorAll('.fe-horario-impressao').forEach(function (el) {{
         el.textContent = txt;
       }});
