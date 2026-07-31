@@ -1,3 +1,18 @@
-Ajuste nos imputs http://localhost:5022/veiculos/cadastrar?aba=frota
-onde esta F00{NÚMERO DA FROTA} disponibilize assim F00{Número da Frota} e a validação deve sequir este placeholder o mesmo para o Campo
+..
+## Resultado Esperado
 
+A Folha Espelho deverá apresentar um layout limpo, padronizado e de fácil leitura, permitindo que os atendentes utilizem a impressão como uma **Lista de Controle de Pacientes**, contendo exatamente dez registros por página, cabeçalho repetido automaticamente, rodapé institucional discreto, paginação automática e todas as informações provenientes do banco de dados, preservando integralmente o funcionamento já existente do sistema.
+
+
+Checklist de teste
+
+Reiniciar STP e abrir /agendamentos
+Filtro com < 10 programados → 1 página, título + data + rodapé
+Exatamente 10 → 1 página cheia
+Mais de 10 → páginas extras, cabeçalho em todas, Página X de Y
+Registro sem acompanhante → sem Nome/Telefone Ac.
+Registro com acompanhante → Nome Ac. e Telefone Ac. preenchidos
+Dia da semana e data batem com os agendamentos
+Ao imprimir, horário atualiza (não fica --:-- / valor fixo)
+Rótulos em negrito, valores em fonte normal, sem sobreposição
+Impressão A4 paisagem

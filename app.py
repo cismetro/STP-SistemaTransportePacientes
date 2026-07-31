@@ -7417,8 +7417,47 @@ def query_agendamentos_programados(filtros):
     )
 
 
+_DIAS_SEMANA_PT = (
+    'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira',
+    'Sexta-feira', 'Sábado', 'Domingo',
+)
+_MESES_PT = (
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+)
+FOLHA_ESPELHO_REGISTROS_POR_PAGINA = 10
+
+
+def formatar_data_lista_controle(data_ref):
+    """Retorna (dd/mm/aaaa, dia_semana, 'Quinta-feira, 23 de julho de 2026')."""
+    if not data_ref:
+        return '', '', ''
+    dia_semana = _DIAS_SEMANA_PT[data_ref.weekday()]
+    data_br = data_ref.strftime('%d/%m/%Y')
+    data_extenso = (
+        f'{dia_semana}, {data_ref.day} de {_MESES_PT[data_ref.month - 1]} de {data_ref.year}'
+    )
+    return data_br, dia_semana, data_extenso
+
+
+def data_referencia_folha_espelho(agendamentos):
+    """Data dos agendamentos impressos (única ou a mais frequente)."""
+    datas = [a.data for a in (agendamentos or []) if getattr(a, 'data', None)]
+    if not datas:
+        return None
+    if all(d == datas[0] for d in datas):
+        return datas[0]
+    # Múltiplas datas no filtro: usa a mais frequente; empate → menor data
+    from collections import Counter
+    contagem = Counter(datas)
+    mais = contagem.most_common()
+    max_n = mais[0][1]
+    candidatas = sorted(d for d, n in mais if n == max_n)
+    return candidatas[0]
+
+
 def montar_dados_folha_espelho(agendamento):
-    """Campos da Folha Espelho (AJUSTES/folhaespelho.jpeg)."""
+    """Campos da Folha Espelho / Lista de Controle de Pacientes."""
     from html import escape
     d = montar_dados_cartao_motorista(agendamento)
     paciente = agendamento.paciente
@@ -7427,7 +7466,6 @@ def montar_dados_folha_espelho(agendamento):
     bairro = d.get('bairro') or ''
     partes_rua = [p for p in (rua, numero, bairro) if p]
     rua_completa = ' '.join(partes_rua)
-    # Texto clínico / especialidade (linha 2 do modelo)
     especialidade = d.get('tipo_transporte') or ''
     obs = d.get('observacao_ponto') or ''
     ponto = d.get('ponto') or ''
@@ -7439,56 +7477,56 @@ def montar_dados_folha_espelho(agendamento):
         **d,
         'rua_completa': rua_completa,
         'tratamento': tratamento,
-        'ac_nome_exibir': d['ac_nome'] if tem_ac else 'SEM ACOMP.',
+        'ac_nome_exibir': d['ac_nome'] if tem_ac else '',
         'ac_idade_exibir': d.get('ac_idade') or '',
         'ac_tel_exibir': d.get('ac_tel') or '',
-        'ponto_exibir': ponto or 'RESIDÊNCIA',
+        'ponto_exibir': ponto or '',
     }
 
 
 def _html_bloco_folha_espelho(d):
-    """Um registro da Folha Espelho (3 linhas + separador), fiel ao JPEG oficial."""
+    """
+    Um registro da Lista de Controle.
+    Títulos em negrito (<strong> + .fe-lab); valores em fonte normal (.fe-v).
+    Nome Ac. / Telefone Ac. só quando houver acompanhante.
+    """
+    frota = d.get('frota') or d.get('placa') or ''
+    linha_ac = ''
+    if d.get('tem_ac'):
+        linha_ac = f"""
+      <div class="fe-l2">
+        <span><strong class="fe-lab">Nome Ac.:</strong> <span class="fe-v">{d.get('ac_nome_exibir') or ''}</span></span>
+        <span><strong class="fe-lab">Telefone Ac.:</strong> <span class="fe-v">{d.get('ac_tel_exibir') or ''}</span></span>
+      </div>"""
     return f"""
     <div class="fe-bloco">
       <div class="fe-l1">
-        <span class="fe-c fe-mot"><span class="fe-v">{d['motorista']}</span></span>
-        <span class="fe-c fe-fro"><span class="fe-v">{d['frota'] or d['placa']}</span></span>
-        <span class="fe-c fe-sai"><span class="fe-v">{d['hora_saida']}</span></span>
-        <span class="fe-c fe-des"><span class="fe-v">{d['destino']}</span></span>
-        <span class="fe-c fe-pac"><span class="fe-v">{d['paciente_nome']}</span></span>
-        <span class="fe-c fe-ida"><span class="fe-v">{d['idade']}</span></span>
-        <span class="fe-c fe-ac"><span class="fe-v">{d['ac_flag']}</span></span>
-        <span class="fe-c fe-hco"><span class="fe-v">{d['hora_consulta']}</span></span>
-        <span class="fe-c fe-pon"><span class="fe-v">{d['ponto_exibir']}</span></span>
+        <span><strong class="fe-lab">Nome do Motorista:</strong> <span class="fe-v">{d.get('motorista') or ''}</span></span>
+        <span><strong class="fe-lab">Frota:</strong> <span class="fe-v">{frota}</span></span>
+        <span><strong class="fe-lab">H. Saída:</strong> <span class="fe-v">{d.get('hora_saida') or ''}</span></span>
       </div>
       <div class="fe-l2">
-        <span class="fe-lab">TEL</span> <span class="fe-v">{d['tel']}</span>
-        <span class="fe-lab">RUA:</span> <span class="fe-v">{d['rua_completa']}</span>
-        <span class="fe-v fe-trat">{d['tratamento']}</span>
+        <span><strong class="fe-lab">Nome do Paciente:</strong> <span class="fe-v">{d.get('paciente_nome') or ''}</span></span>
+        <span><strong class="fe-lab">H. Consulta:</strong> <span class="fe-v">{d.get('hora_consulta') or ''}</span></span>
+        <span><strong class="fe-lab">Atendente:</strong> <span class="fe-v">{d.get('atendente') or ''}</span></span>
       </div>
-      <div class="fe-l3">
-        <span class="fe-lab">ATENDENTE:</span> <span class="fe-v">{d['atendente']}</span>
-        <span class="fe-lab">NOME AC:</span> <span class="fe-v">{d['ac_nome_exibir']}</span>
-        <span class="fe-lab">IDADE AC:</span> <span class="fe-v">{d['ac_idade_exibir']}</span>
-        <span class="fe-lab">TEL AC:</span> <span class="fe-v">{d['ac_tel_exibir']}</span>
-      </div>
+      {linha_ac}
     </div>
     """
 
 
 def css_folha_espelho():
-    """CSS fiel a folhaespelho.jpeg — A4 paisagem, denso, sem bordas verticais."""
+    """CSS Lista de Controle de Pacientes — A4 paisagem, 10 registros/página."""
     return """
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 10px;
-    font-family: "Courier New", Courier, monospace;
-    color: #000; background: #d0d0d0; font-size: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000; background: #d0d0d0; font-size: 11px;
   }
   .toolbar {
     max-width: 297mm; margin: 0 auto 10px;
     display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-    font-family: Arial, Helvetica, sans-serif;
   }
   .toolbar a, .toolbar button {
     border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer;
@@ -7498,68 +7536,126 @@ def css_folha_espelho():
   .btn-back { background: #546e7a; }
   .toolbar .info { font-size: 12.5px; color: #222; }
 
-  .fe-folha {
-    max-width: 297mm; margin: 0 auto; background: #fff;
-    padding: 6mm 5mm;
+  .fe-pagina {
+    max-width: 297mm; margin: 0 auto 12px; background: #fff;
+    padding: 8mm 7mm 6mm;
+    display: flex; flex-direction: column;
+    min-height: 190mm;
   }
-  .fe-cab {
-    display: grid;
-    grid-template-columns: 1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr;
-    gap: 2px 4px;
-    font-weight: 700;
+  .fe-titulo {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    font-size: 9.5px;
-    border-bottom: 1.5px solid #000;
-    padding-bottom: 2px;
-    margin-bottom: 2px;
+    margin: 0 0 4px;
   }
+  .fe-subtitulo-data {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .fe-registros { flex: 1 1 auto; }
   .fe-bloco {
-    border-bottom: 1px solid #000;
-    padding: 3px 0 4px;
+    border-bottom: 1px solid #333;
+    padding: 4px 0 5px;
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .fe-l1 {
-    display: grid;
-    grid-template-columns: 1.15fr 0.55fr 0.7fr 1.55fr 1.7fr 0.4fr 0.3fr 0.75fr 0.7fr;
-    gap: 2px 4px;
-    align-items: start;
-  }
-  .fe-l2, .fe-l3 {
-    display: flex; flex-wrap: wrap; gap: 2px 10px;
-    margin-top: 1px; align-items: baseline;
+  .fe-l1, .fe-l2 {
+    display: flex; flex-wrap: wrap; gap: 2px 14px;
+    align-items: baseline;
+    margin-top: 1px;
   }
   .fe-lab {
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 9.5px;
+    font-weight: 700 !important;
+    font-size: 10.5px;
+  }
+  strong.fe-lab {
+    font-weight: 700 !important;
   }
   .fe-v {
-    font-weight: 700;
+    font-weight: 400 !important;
     text-transform: uppercase;
-    font-size: 10px;
+    font-size: 11px;
     word-break: break-word;
   }
-  .fe-trat { flex: 1 1 40%; min-width: 120px; }
+  .fe-rodape {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #999;
+    font-size: 9.5px;
+    color: #333;
+    line-height: 1.35;
+  }
+  .fe-rodape-aviso {
+    font-style: italic;
+    color: #555;
+    margin-bottom: 3px;
+  }
+  .fe-rodape-meta { font-weight: 500; }
   .fe-vazio {
     text-align: center; padding: 40px 16px;
     font-family: Arial, Helvetica, sans-serif; color: #444;
+    background: #fff; max-width: 297mm; margin: 0 auto;
   }
 
   @media print {
     body { background: #fff; padding: 0; margin: 0; }
     .toolbar, .no-print { display: none !important; }
-    .fe-folha { max-width: none; margin: 0; padding: 0; }
-    @page { size: A4 landscape; margin: 6mm 5mm; }
+    .fe-pagina {
+      max-width: none; margin: 0; padding: 0;
+      min-height: 0;
+      page-break-after: always;
+      break-after: page;
+    }
+    .fe-pagina:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+    @page { size: A4 landscape; margin: 8mm 7mm; }
     .fe-bloco { page-break-inside: avoid; break-inside: avoid; }
   }
 """
 
 
+def _html_cabecalho_folha_espelho(data_br, dia_semana):
+    data_linha = ''
+    if data_br:
+        data_linha = f'Data: {data_br}'
+        if dia_semana:
+            data_linha += f' – {dia_semana}'
+    return f"""
+    <h1 class="fe-titulo">LISTA DE CONTROLE DE PACIENTES</h1>
+    <div class="fe-subtitulo-data">{data_linha}</div>
+    """
+
+
+def _html_rodape_folha_espelho(data_extenso, pagina_atual, total_paginas):
+    from html import escape
+    meta = escape(data_extenso or '')
+    return f"""
+    <footer class="fe-rodape">
+      <div class="fe-rodape-aviso">
+        Estes dados são apenas para teste. O sistema deverá imprimir automaticamente
+        a data e o horário reais da impressão.
+      </div>
+      <div class="fe-rodape-meta">
+        {meta} | Página {pagina_atual} de {total_paginas}
+        | Horário: <span class="fe-horario-impressao">--:--</span>
+      </div>
+    </footer>
+    """
+
+
 def gerar_html_impressao_agendamentos(
     agendamentos_lista, filtros, pagina_ini, pagina_fim, per_page, href_voltar=None
 ):
-    """Folha Espelho oficial — só agendamentos com programação completa."""
+    """
+    Folha Espelho / Lista de Controle de Pacientes.
+    10 registros por página; cabeçalho e rodapé em cada página.
+    """
     try:
         from flask import url_for, has_request_context
         if not href_voltar:
@@ -7574,48 +7670,65 @@ def gerar_html_impressao_agendamentos(
     if pagina_ini != pagina_fim:
         resumo += f' · Páginas: {pagina_ini}–{pagina_fim}'
 
+    qtd = len(elegiveis)
+    data_ref = data_referencia_folha_espelho(elegiveis)
+    data_br, dia_semana, data_extenso = formatar_data_lista_controle(data_ref)
+
     if not elegiveis:
         corpo = """
         <div class="fe-vazio">
-          <h2>Folha Espelho indisponível</h2>
+          <h2>Lista de Controle indisponível</h2>
           <p>Nenhum agendamento com motorista e veículo programados nesta seleção.</p>
           <p>Conclua a programação (Programar) e tente novamente.</p>
         </div>"""
     else:
-        blocos = ''.join(_html_bloco_folha_espelho(montar_dados_folha_espelho(a)) for a in elegiveis)
-        corpo = f"""
-        <div class="fe-folha">
-          <div class="fe-cab">
-            <span>MOTORISTA LEVA</span>
-            <span>FROTA:</span>
-            <span>H. SAIDA:</span>
-            <span>DESTINO:</span>
-            <span>NOME DO PACIENTE:</span>
-            <span>IDADE:</span>
-            <span>AC:</span>
-            <span>H. CONSULTA</span>
-            <span>PONTO:</span>
-          </div>
-          {blocos}
-        </div>"""
+        por_pagina = FOLHA_ESPELHO_REGISTROS_POR_PAGINA
+        total_paginas = max(1, (qtd + por_pagina - 1) // por_pagina)
+        paginas_html = []
+        for i in range(total_paginas):
+            fatia = elegiveis[i * por_pagina:(i + 1) * por_pagina]
+            blocos = ''.join(
+                _html_bloco_folha_espelho(montar_dados_folha_espelho(a)) for a in fatia
+            )
+            paginas_html.append(f"""
+        <section class="fe-pagina">
+          {_html_cabecalho_folha_espelho(data_br, dia_semana)}
+          <div class="fe-registros">{blocos}</div>
+          {_html_rodape_folha_espelho(data_extenso, i + 1, total_paginas)}
+        </section>""")
+        corpo = '\n'.join(paginas_html)
 
-    qtd = len(elegiveis)
     rotulo_voltar = 'Voltar'
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Folha Espelho — {qtd} registro(s)</title>
+<title>Lista de Controle de Pacientes — {qtd} registro(s)</title>
 <style>{css_folha_espelho()}</style>
 </head>
 <body>
   <div class="toolbar no-print">
-    <button class="btn-print" type="button" onclick="window.print()">Imprimir Folha Espelho (A4 paisagem)</button>
+    <button class="btn-print" type="button" onclick="window.print()">Imprimir Lista de Controle (A4 paisagem)</button>
     <a class="btn-back" href="{href_voltar}">{rotulo_voltar}</a>
-    <span class="info">{qtd} programado(s) · {resumo}</span>
+    <span class="info">{qtd} programado(s) · 10/página · {resumo}</span>
   </div>
   {corpo}
+  <script>
+  (function () {{
+    function pad(n) {{ return String(n).padStart(2, '0'); }}
+    function atualizarHorarioImpressao() {{
+      var agora = new Date();
+      var txt = pad(agora.getHours()) + ':' + pad(agora.getMinutes());
+      document.querySelectorAll('.fe-horario-impressao').forEach(function (el) {{
+        el.textContent = txt;
+      }});
+    }}
+    atualizarHorarioImpressao();
+    window.addEventListener('beforeprint', atualizarHorarioImpressao);
+    setInterval(atualizarHorarioImpressao, 15000);
+  }})();
+  </script>
 </body>
 </html>"""
 
