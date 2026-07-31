@@ -1,0 +1,55 @@
+RELATÓRIO — Correção da Separação de Endereço para Impressão
+============================================================
+Data: 31/07/2026
+
+1) CAUSA DO PROBLEMA
+--------------------
+- O formulário de paciente JÁ tinha campos separados (logradouro, número, bairro).
+- Quase todos os registros legados (2464 de 2470) tinham apenas o texto em
+  pacientes.endereco, com logradouro/numero/bairro NULL.
+- Em montar_dados_cartao_motorista, quando logradouro estava vazio, o sistema
+  copiava o endereço INTEIRO para o campo RUA da impressão, deixando Nº e BAIRRO
+  vazios.
+
+2) O QUE FOI ALTERADO
+---------------------
+- Parser robusto partir_endereco_completo() (rua, número, bairro, complemento).
+- endereco_paciente_para_campos() passou a usar esse parser (inclui complemento).
+- Coluna pacientes.complemento + migração automática dos textos legados.
+- Impressão (Cartão / Folha) passou a ler os campos estruturados via
+  endereco_paciente_para_campos — sem “despejar” endereco em RUA.
+- Formulários cadastrar/editar paciente: campo Complemento + montagem do
+  endereço oculto incluindo complemento.
+- Gravação em create/update persiste complemento.
+
+3) ARQUIVOS MODIFICADOS
+-----------------------
+- app.py (modelo, migração, parser, formulários, montar_dados_cartao_motorista)
+
+4) CENÁRIOS TESTADOS
+--------------------
+Parser unitário:
+  PAULO FREDERICO ROGGER, 84, PQ ESTER
+    → RUA=PAULO FREDERICO ROGGER | Nº=84 | BAIRRO=PQ ESTER | COMP=
+  7 DE SETEMBRO, 347, CENTRO, ATRAS DA DELEGACIA
+    → RUA=7 DE SETEMBRO | Nº=347 | BAIRRO=CENTRO | COMP=ATRAS DA DELEGACIA
+  Cosmópolis-SP
+    → RUA=Cosmópolis-SP | Nº= | BAIRRO= | COMP=
+  LUIZ NALIN, 218, JD ELDORADO
+    → RUA=LUIZ NALIN | Nº=218 | BAIRRO=JD ELDORADO
+  RUA X, Nº 12, BAIRRO Y
+    → RUA=RUA X | Nº=12 | BAIRRO=BAIRRO Y
+
+Migração: 2464 pacientes estruturados; 0 restantes sem logradouro.
+
+Paciente real id=1 (CRISTINA STRAZZACAPPA) no Cartão:
+  RUA=7 DE SETEMBRO | Nº=347 | BAIRRO=CENTRO | COMP=ATRAS DA DELEGACIA
+
+5) CONFIRMAÇÃO
+--------------
+Rua, Número, Bairro e Complemento são preenchidos corretamente na origem
+(cadastro/banco) e propagados para os documentos de impressão (Cartão do
+Motorista e Folha Espelho). Layout dos documentos não foi alterado;
+complemento não entra no BAIRRO.
+
+Reinicie o STP para carregar a migração e o novo código.

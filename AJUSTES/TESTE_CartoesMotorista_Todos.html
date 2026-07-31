@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartões do Motorista — 22 viagem(ns)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 12px;
+    font-family: "Courier New", Courier, monospace;
+    color: #000; background: #c8c8c8;
+  }
+  .toolbar {
+    max-width: 297mm; margin: 0 auto 12px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .toolbar a, .toolbar button {
+    border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer;
+    font-size: 13px; text-decoration: none; color: #fff;
+  }
+  .btn-print { background: #2e7d32; }
+  .btn-back { background: #546e7a; }
+  .toolbar .info { font-size: 12.5px; color: #222; }
+
+  .folha {
+    max-width: 297mm; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .cartao {
+    background: #fff;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .cut-hint {
+    text-align: center; font-size: 10px; color: #777;
+    border-top: 1px dashed #999; margin-bottom: 3px; padding-top: 2px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .cartao:first-child .cut-hint { display: none; }
+
+  .cartao-inner {
+    border: 1.5px solid #000;
+    padding: 5px 8px 6px;
+  }
+
+  .cm-top {
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .cm-top-left { flex: 0 0 32%; min-width: 0; }
+  .cm-top-right { flex: 1; min-width: 0; }
+
+  .cm-ln {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 3px 8px; margin: 0; line-height: 1.2;
+    font-size: 11px;
+  }
+  .cm-ln-inline { flex-wrap: nowrap; }
+  .cm-ln-spread {
+    justify-content: space-between;
+    gap: 6px 12px;
+    margin-top: 1px;
+  }
+  .cm-ln-spread > span { min-width: 0; }
+
+  .sp { display: inline-block; width: 14px; }
+
+  .cm-sep {
+    border-top: 1px solid #bbb;
+    margin: 3px 0 2px;
+  }
+
+  .lb {
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: 10.5px;
+  }
+  .vl {
+    font-weight: 700;
+    text-transform: uppercase;
+    word-break: break-word;
+    font-size: 11.5px;
+  }
+  .vl-mot {
+    white-space: nowrap;
+    overflow: hidden;
+    word-break: normal;
+  }
+  .vl-pac { font-size: 12px; font-weight: 800; }
+
+  .man {
+    display: inline-block;
+    min-width: 48px;
+    border-bottom: 1px solid #000;
+    height: 11px;
+    vertical-align: baseline;
+    margin-left: 2px;
+  }
+
+  .cm-obs-bloco {
+    margin-top: 2px;
+    min-height: 1.4em;
+  }
+  .vl-obs {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1.25;
+  }
+
+  @media screen {
+    .cartao-inner { box-shadow: 0 1px 2px rgba(0,0,0,.14); }
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; margin: 0; }
+    .toolbar, .no-print, .cut-hint { display: none !important; }
+    .folha { max-width: none; margin: 0; gap: 0; }
+
+    @page {
+      size: A4 landscape;
+      margin: 5mm 7mm;
+    }
+
+    /* A4 paisagem (~200mm úteis) → 4 cartões ≈ 46,5mm cada */
+    .cartao {
+      width: 100%;
+      height: 46.5mm;
+      max-height: 46.5mm;
+      overflow: hidden;
+      margin: 0 0 1.5mm 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .cartao:nth-child(4n) {
+      margin-bottom: 0;
+      page-break-after: always;
+      break-after: page;
+    }
+    .cartao:nth-child(4n):last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+    .cartao-inner {
+      height: 100%;
+      border-width: 1.2px;
+      padding: 1.5px 4px 2px;
+    }
+    .cm-sep { margin: 1.5px 0 1px; }
+    .cm-ln { font-size: 8.5px; line-height: 1.12; gap: 2px 6px; }
+    .lb { font-size: 8px; }
+    .vl { font-size: 9px; }
+    .vl-pac { font-size: 9.5px; }
+    .vl-obs { font-size: 9px; line-height: 1.15; }
+    .man { min-width: 36px; height: 8px; }
+    .cm-obs-bloco { min-height: 1.1em; margin-top: 1px; }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button class="btn-print" type="button" onclick="window.print()">Imprimir cartões (A4 paisagem · 4/folha)</button>
+    <a class="btn-back" href="/agendamentos">Voltar aos Agendamentos</a>
+    <span class="info">22 viagem(ns) · Motorista: 22 motoristas · Data: 31/07/2026 · Teste lote filtro Hoje — A4 paisagem · 4 cartões por folha · destaque/corte</span>
+  </div>
+  <div class="folha">
+    
+    <article class="cartao" data-viagem="1">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="MARCIO DOS SANTOS CAMARGO">MARCIO DOS SANTOS CAMARGO</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">300 - 300</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">06:00:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Hospital Estadual — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">CRISTINA STRAZZACAPPA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">81</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.001-67</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">7 DE SETEMBRO, 347, CENTRO, ATRAS DA DELEGACIA</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 7537-300</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 01</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.00</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800001111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">08:00:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">RESIDENCIA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="2">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="ROBERTO RUFINO DE AGUILAR">ROBERTO RUFINO DE AGUILAR</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">19</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">06:07:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Santa Casa — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">SERVIÇO DE SAÚDE</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">126</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.002-48</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">Cosmópolis-SP</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(19) 0000-0000</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">08:11:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs"></span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="3">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="WAGNER LUIZ ALVES">WAGNER LUIZ ALVES</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">21</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">06:14:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Hospital Regional — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">HADASSA VITORIA CALIXTO DA LUZ</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">14</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.003-29</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">LUIZ NALIN, 218, JD ELDORADO</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(19) 99158-9864</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 03</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.02</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800021111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">08:22:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">POSTO VILA COSMO</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="4">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="ROGERIO RUFINO DE AGUILAR">ROGERIO RUFINO DE AGUILAR</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">300 - 300</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">06:21:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">HC Unicamp — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">CICERO DOS SANTOS SILVA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">68</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.004-00</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">JURANDIR DA CUNHA NABÃO, 63, PANEIRAS</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 2525-943</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">08:33:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">VEM NO POSTO</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="5">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="DANIEL ALVES LIMA DE OLIVEIRA">DANIEL ALVES LIMA DE OLIVEIRA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">24</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">07:28:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Clínica Hemodiálise — Limeira/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">JOSÉ ANTONIO AMBROSIO</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">70</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">000.087.258-02</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">CORONEL SILVA TELLES, 607, BAGUÁ</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(97) 1251-052</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 05</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.04</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800041111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">09:44:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">RODOVIÁRIA | RODOVIÁRIA | NORMAL</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="6">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="UMBERTO ROCHA MASSOLLA">UMBERTO ROCHA MASSOLLA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">33</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">07:35:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">CAPS — Cosmópolis/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">MARTA LEME DE SOUZA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">126</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.005-90</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">NARCIZO DARIO ANDRETTO, 295, ANDORINHAS</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 50983-6997</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">09:55:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs"></span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="7">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="CLAUDINEI SUSIGAN">CLAUDINEI SUSIGAN</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">400 - 400</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">07:42:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">UBS Centro — Cosmópolis/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">DIRCE APARECIDA FIORINI</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">82</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.006-71</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">LUIZ NALIN, 57, ELDORADO</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 71613-2638</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 07</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.06</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800061111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">09:06:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">MACA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="8">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="JOSÉ LUIZ ROCHA">JOSÉ LUIZ ROCHA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">67</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">07:49:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">CEAM — Americana/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">BETANIA FRANCISCA DA SILVA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">55</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.007-52</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">PEDRO DE FAVERI, 555, JD DO SOL</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 31347-0698</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">09:17:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">AG POR TELEFONE - USO DE O2 | RESIDENCIA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="9">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="NICANOR DA SILVA">NICANOR DA SILVA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">400 - 400</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">08:03:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Santa Casa — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">MIRIAN REGINA DA COSTA BUENO</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">73</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">000.258.758-09</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">JOÃO DIAS DE ARRUDA NETO, 621, JD DE LOURDES</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 7088-176</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">10:39:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">ESCOLA ODILA BOTCHER</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="10">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="DAVI LACERDA ARAUJO">DAVI LACERDA ARAUJO</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">79</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">08:10:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Hospital Regional — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">ROSEVALDO CATUM DOS SANTOS</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">74</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.008-33</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">PAULO DE AZEVEDO FILHO, 288, NOVO COSMOPOLIS</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(98) 3424-883</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 11</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.10</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800101111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">10:50:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">ASSEMBLEIA DE DEUS</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="11">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="MACIEL RIBEIRO LOPES">MACIEL RIBEIRO LOPES</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">83</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">08:17:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">HC Unicamp — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">REGINALDA DE SOUSA SALES</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">58</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">000.322.013-38</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">MONTE CASTELO, 2650, VILA COSMO</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(99) 7980-976</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">10:01:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">PORTARIA COND. (MONTE CASTELO)</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="12">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="LUIZ JOSÉ RODRIGUES">LUIZ JOSÉ RODRIGUES</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">71</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">08:56:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Hospital Estadual — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">FRANCISCA MARIA DE SOUSA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">46</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">000.235.293-18</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">ORLANDO PERCUCCI, 71, BADER</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(98) 10564-3399</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 09</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.08</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800081111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">10:28:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">POSTO SCURSONI</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="13">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="MARIO MONTEIRO GRECCO">MARIO MONTEIRO GRECCO</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">400 - 400</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">09:24:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Clínica Hemodiálise — Limeira/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">JOSE GUALBERTO ANSELMO</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">82</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.009-14</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">25 DE DEZEMBRO, 34, JD DE FAVERI</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(98) 77289-5238</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 13</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.12</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800121111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">11:12:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">RESIDÊNCIA | RESIDÊNCIA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="14">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="GENILSON DA SILVA">GENILSON DA SILVA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">93</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">09:31:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">CAPS — Cosmópolis/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">VILMAR DIAS</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">126</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.010-58</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">NICOLA CORONE, 68, ROSAMELIA</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(38) 12469-5994</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">11:23:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">HEMODIÁLISE - TERÇA/QUINTA/SÁBADO) 2º TURNO | RESIDENCIA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="15">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="RICARDO CORREA JARDIM">RICARDO CORREA JARDIM</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">96</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">09:38:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">UBS Centro — Cosmópolis/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">MANOEL MARTINS SOBRINHO</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">84</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.011-39</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">GIOCONDA MOURA, 256, JD PAULISTA</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(38) 1278-18</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 15</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.14</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800141111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">11:34:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">FARMACIA MUNICIPAL</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="16">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="RENATO FRANCIS TORRES MENEZES">RENATO F. T. MENEZES</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">300 - 300</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">09:45:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">CEAM — Americana/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">MARIA APARECIDA DE OILIVEIRA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">126</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.012-10</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">PONCIANO TONUSSI, 595, PQ ESTER, CASA</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(38) 7266-66</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">11:45:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs"></span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="17">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="AGNALDO LEMES">AGNALDO LEMES</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">300 - 300</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">10:06:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Hospital Regional — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">IRACY LISBOA DOS SANTOS</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">74</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.014-81</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">DINO BANCHIERI, 318, PQ DOS TRABALHADORES</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(98) 35084-4199</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 19</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.18</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800181111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">12:18:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">IG SÃO BENEDITO</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="18">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="IVAIR GERALDO">IVAIR GERALDO</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">192</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">10:13:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">HC Unicamp — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">GILSON DE SOUZA PONCIANO</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">126</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.015-62</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">GEORGE KIOSA, 81, VILA KALIL AUN</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(19) 98143-9175</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">12:29:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">PD AGD TEL -  RESIDENCIA - PAC HEMODIALISE | RESIDENCIA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="19">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="MATEUS LUIS PULZ SILVA">MATEUS LUIS PULZ SILVA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">113</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">10:52:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Hospital Estadual — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">WELLITA JUSARA DA SILVA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">38</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.013-09</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">ZICO FELIX, 332, BETO SPANA</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(19) 99864-8016</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 17</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.16</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800161111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">12:56:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">IG SÃO BENEDITO</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="20">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="JOSÉ MARCOS">JOSÉ MARCOS</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">120</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">10:59:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Santa Casa — Campinas/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">MARIA DA SILVA PEREIRA</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">41</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">000.568.453-67</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">PEDRO DE FAVERI, 626, JD DO SOL</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(98) 18020-7099</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">12:07:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">PADARIA CHAVES</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="21">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="AILTON APARECIDO PEREIRA">AILTON APARECIDO PEREIRA</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">223</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">11:20:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">Clínica Hemodiálise — Limeira/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">CARLOS JESUS KIL</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">72</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">800.000.016-43</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">ANTONIO SOUZA PERES, 960, JD PLANALTO</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(98) 2317-785</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">1</span>
+            <span class="lb">NOME AC:</span> <span class="vl">ACOMPANHANTE TESTE 21</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl">10.000.20</span>
+            <span class="lb">TEL AC</span> <span class="vl">198800201111</span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">13:40:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">MACA</span>
+        </div>
+
+      </div>
+    </article>
+
+    <article class="cartao" data-viagem="22">
+      <div class="cut-hint no-print">— destaque / corte —</div>
+      <div class="cartao-inner">
+
+        <div class="cm-top">
+          <div class="cm-top-left">
+            <div class="cm-ln"><span class="lb">MOTORISTA:</span> <span class="vl vl-mot" title="MARCOS ROBERTO ALEXANDRE">MARCOS ROBERTO ALEXANDRE</span></div>
+            <div class="cm-ln"><span class="lb">FROTA:</span> <span class="vl">300 - 300</span></div>
+          </div>
+          <div class="cm-top-right">
+            <div class="cm-ln cm-ln-inline">
+              <span class="lb">DATA DA CONSULTA:</span> <span class="vl">31/07/2026</span>
+              <span class="sp"></span>
+              <span class="lb">HORA DE SAIDA:</span> <span class="vl">11:27:00</span>
+            </div>
+            <div class="cm-ln"><span class="lb">DESTINO:</span> <span class="vl">CAPS — Cosmópolis/SP</span></div>
+          </div>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">NOME DO PACIENTE:</span> <span class="vl vl-pac">JOSE FRANCISCO CARDOSO</span></span>
+          <span><span class="lb">IDADE</span> <span class="vl">80</span></span>
+          <span><span class="lb">CPF:</span> <span class="vl">000.789.418-06</span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RUA:</span> <span class="vl">ANTONIO CARLOS NOGUEIRA, 59, BAGUA</span></span>
+          <span><span class="lb">Nº:</span> <span class="vl"></span></span>
+          <span><span class="lb">BAIRRO</span> <span class="vl"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">TEL</span> <span class="vl">(19) 99109-2828</span></span>
+          <span><span class="lb">COND DO PACIENTE</span> <span class="vl"></span></span>
+          <span><span class="lb">H.chegada:</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">AC:</span> <span class="vl">0</span>
+            <span class="lb">NOME AC:</span> <span class="vl"></span></span>
+          <span><span class="lb">IDADE</span> <span class="vl"></span></span>
+          <span><span class="lb">KM CHEGADA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">RG AC:</span> <span class="vl"></span>
+            <span class="lb">TEL AC</span> <span class="vl"></span></span>
+          <span><span class="lb">H.DA CONSULTA</span> <span class="vl">13:51:00</span></span>
+          <span><span class="lb">KM SAIDA</span> <span class="man"></span></span>
+        </div>
+
+        <div class="cm-sep"></div>
+
+        <div class="cm-ln cm-ln-spread">
+          <span><span class="lb">OBSERVACAO:</span></span>
+          <span><span class="lb">PONTO:</span> <span class="vl"></span></span>
+          <span><span class="lb">ATENDENTE:</span> <span class="vl">JULIANA</span></span>
+        </div>
+
+        <div class="cm-obs-bloco">
+          <span class="vl vl-obs">RESIDENCIA</span>
+        </div>
+
+      </div>
+    </article>
+  </div>
+</body>
+</html>

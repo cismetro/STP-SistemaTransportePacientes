@@ -210,6 +210,7 @@ class Paciente(db.Model):
     logradouro = db.Column(db.String(200))
     numero = db.Column(db.String(10))
     bairro = db.Column(db.String(100))
+    complemento = db.Column(db.String(200))
     ponto_referencia = db.Column(db.String(200))
     cartao_sus = db.Column(db.String(20))
     observacoes = db.Column(db.Text)
@@ -1545,6 +1546,7 @@ def verificar_e_criar_banco():
         print(f"✅ Banco de dados encontrado: {db_path}")
         verificar_usuario_admin()
         migrar_paciente_novos_campos()
+        migrar_enderecos_pacientes_estruturados()
         migrar_motorista_novos_campos()
         migrar_telefones_paciente()
         migrar_frotas()
@@ -1566,6 +1568,7 @@ def criar_banco_e_usuario():
         migrar_frotas()
         migrar_numero_frota_veiculo()
         migrar_paciente_novos_campos()
+        migrar_enderecos_pacientes_estruturados()
         migrar_motorista_novos_campos()
         migrar_acompanhantes()
         migrar_parentescos()
@@ -2081,6 +2084,7 @@ def migrar_paciente_novos_campos():
             'logradouro': 'VARCHAR(200)',
             'numero': 'VARCHAR(10)',
             'bairro': 'VARCHAR(100)',
+            'complemento': 'VARCHAR(200)',
             'ponto_referencia': 'VARCHAR(200)',
             'condicao_especial': 'BOOLEAN DEFAULT 0 NOT NULL',
             'condicao_paciente': 'VARCHAR(120)',
@@ -2093,6 +2097,61 @@ def migrar_paciente_novos_campos():
                 print(f'✅ Coluna {col} criada em pacientes')
     except Exception as e:
         print(f'⚠️ Migração pacientes: {e}')
+
+
+def migrar_enderecos_pacientes_estruturados():
+    """
+    Preenche logradouro/numero/bairro/complemento a partir do texto legado em
+    pacientes.endereco (e de logradouro “tudo junto”), sem apagar endereco.
+    """
+    try:
+        atualizados = 0
+        for pac in Paciente.query.all():
+            log = (pac.logradouro or '').strip()
+            num = (pac.numero or '').strip()
+            bai = (pac.bairro or '').strip()
+            comp = (getattr(pac, 'complemento', None) or '').strip()
+            end_txt = (pac.endereco or '').strip()
+
+            precisa = (not log or not num) or (',' in log and not num)
+            if not precisa:
+                continue
+
+            fonte = end_txt if end_txt else log
+            if not fonte:
+                continue
+
+            log2, num2, bai2, comp2 = partir_endereco_completo(fonte)
+            mudou = False
+            if not log and log2:
+                pac.logradouro = log2[:200]
+                mudou = True
+            elif log and ',' in log and not num and log2:
+                pac.logradouro = log2[:200]
+                mudou = True
+            if not num and num2:
+                pac.numero = num2[:10]
+                mudou = True
+            if not bai and bai2:
+                pac.bairro = bai2[:100]
+                mudou = True
+            if not comp and comp2:
+                pac.complemento = comp2[:200]
+                mudou = True
+            if mudou:
+                # Mantém endereco composto coerente com os campos
+                composto = compor_endereco_paciente(
+                    pac.logradouro, pac.numero, pac.bairro, pac.complemento
+                )
+                if composto:
+                    pac.endereco = composto
+                atualizados += 1
+        if atualizados:
+            db.session.commit()
+            print(f'✅ Endereços estruturados preenchidos em {atualizados} paciente(s)')
+    except Exception as e:
+        db.session.rollback()
+        print(f'⚠️ Migração endereços estruturados: {e}')
 
 
 def migrar_acompanhantes():
@@ -4954,14 +5013,15 @@ def diff_cadastro_agendamento(antes, depois):
 
 
 def montar_endereco_paciente_de_form(form):
-    """Monta endereco a partir de logradouro/número/bairro (sem campo duplicado)."""
+    """Monta endereco a partir de logradouro/número/bairro/complemento."""
     logradouro = (form.get('logradouro') or '').strip()
     numero = (form.get('numero') or '').strip()
     bairro = (form.get('bairro') or '').strip()
-    endereco = compor_origem_endereco(logradouro, numero, bairro)
+    complemento = (form.get('complemento') or '').strip()
+    endereco = compor_endereco_paciente(logradouro, numero, bairro, complemento)
     if not endereco:
         endereco = (form.get('endereco') or '').strip()
-    return logradouro, numero, bairro, endereco
+    return logradouro, numero, bairro, complemento, endereco
 
 
 def valores_cadastro_agendamento_vazios(hoje_iso=None):
@@ -5064,64 +5124,131 @@ def valores_cadastro_de_agendamento(agendamento):
 
 def compor_origem_endereco(logradouro, numero='', bairro=''):
     """Monta texto único de origem a partir de logradouro + número + bairro."""
+    return compor_endereco_paciente(logradouro, numero, bairro, '')
+
+
+def compor_endereco_paciente(logradouro, numero='', bairro='', complemento=''):
+    """Monta texto único: LOGADOURO, Nº, BAIRRO[, COMPLEMENTO]."""
     logradouro = (logradouro or '').strip().upper()
     numero = (numero or '').strip().upper()
     bairro = (bairro or '').strip().upper()
+    complemento = (complemento or '').strip().upper()
     partes = []
     if logradouro:
         partes.append(logradouro)
     if numero:
-        partes.append(f'Nº {numero}')
+        partes.append(numero)
     if bairro:
         partes.append(bairro)
+    if complemento:
+        partes.append(complemento)
     return ', '.join(partes)
+
+
+def partir_endereco_completo(texto):
+    """
+    Separa texto legado em (logradouro, numero, bairro, complemento).
+    Exemplos:
+      'PAULO FREDERICO ROGGER, 84, PQ ESTER'
+        → ('PAULO FREDERICO ROGGER', '84', 'PQ ESTER', '')
+      '7 DE SETEMBRO, 347, CENTRO, ATRAS DA DELEGACIA'
+        → ('7 DE SETEMBRO', '347', 'CENTRO', 'ATRAS DA DELEGACIA')
+      'Cosmópolis-SP'
+        → ('Cosmópolis-SP', '', '', '')
+    """
+    import re
+    texto = ' '.join(str(texto or '').strip().split())
+    if not texto:
+        return '', '', '', ''
+
+    # Formato com marca explícita de número: "RUA X, Nº 123, BAIRRO[, COMPL]"
+    m = re.match(
+        r'^(.*?),\s*n[º°o.]?\s*([^,]+)\s*(?:,\s*(.*))?$',
+        texto,
+        flags=re.IGNORECASE,
+    )
+    if m:
+        log = m.group(1).strip()
+        num = m.group(2).strip()
+        resto = [p.strip() for p in (m.group(3) or '').split(',') if p.strip()]
+        bai = resto[0] if resto else ''
+        comp = ', '.join(resto[1:]) if len(resto) > 1 else ''
+        return log, num, bai, comp
+
+    partes = [p.strip() for p in texto.split(',') if p.strip()]
+    if len(partes) == 1:
+        return partes[0], '', '', ''
+
+    num_re = re.compile(
+        r'^(?:n[º°o.]?\s*)?(\d+[A-Za-z0-9\-/]*)$|^(S/?N|SN|S\.N\.|SEM\s+N[UÚ]MERO)$',
+        re.IGNORECASE,
+    )
+    num_idx = None
+    num_val = ''
+    for i, p in enumerate(partes):
+        mnum = num_re.match(p)
+        if mnum:
+            num_idx = i
+            num_val = (mnum.group(1) or mnum.group(2) or p).strip()
+            break
+
+    if num_idx is None:
+        # Sem número: 1º = rua; 2º = bairro; demais = complemento
+        log = partes[0]
+        bai = partes[1] if len(partes) > 1 else ''
+        comp = ', '.join(partes[2:]) if len(partes) > 2 else ''
+        return log, '', bai, comp
+
+    log = ', '.join(partes[:num_idx]).strip() if num_idx > 0 else partes[0]
+    resto = partes[num_idx + 1:]
+    bai = resto[0] if resto else ''
+    comp = ', '.join(resto[1:]) if len(resto) > 1 else ''
+    return log, num_val, bai, comp
 
 
 def partir_origem_endereco(origem):
     """Tenta separar origem salva em logradouro, número e bairro."""
-    import re
-    origem = (origem or '').strip()
-    if not origem:
-        return '', '', ''
-    # Formato: "RUA X, Nº 123, BAIRRO"
-    m = re.match(
-        r'^(.*?),\s*n[º°o.]?\s*([^,]+)(?:,\s*(.*))?$',
-        origem,
-        flags=re.IGNORECASE,
-    )
-    if m:
-        return m.group(1).strip(), m.group(2).strip(), (m.group(3) or '').strip()
-    # Formato comum antigo: "RUA X, 123, BAIRRO" ou "RUA X, 123"
-    m2 = re.match(
-        r'^(.*?),\s*(\d+[A-Za-z0-9\-/]*)\s*(?:,\s*(.*))?$',
-        origem,
-    )
-    if m2:
-        return m2.group(1).strip(), m2.group(2).strip(), (m2.group(3) or '').strip()
-    return origem, '', ''
+    log, num, bai, comp = partir_endereco_completo(origem)
+    if comp:
+        bai = f'{bai} - {comp}' if bai else comp
+    return log, num, bai
 
 
 def endereco_paciente_para_campos(paciente):
-    """Extrai cep/logradouro/número/bairro do paciente (campos ou texto em endereco)."""
+    """Extrai cep/logradouro/número/bairro/complemento (campos ou texto em endereco)."""
     if not paciente:
-        return {'cep': '', 'logradouro': '', 'numero': '', 'bairro': ''}
+        return {
+            'cep': '', 'logradouro': '', 'numero': '', 'bairro': '', 'complemento': '',
+        }
     logradouro = (getattr(paciente, 'logradouro', None) or '').strip()
     numero = (getattr(paciente, 'numero', None) or '').strip()
     bairro = (getattr(paciente, 'bairro', None) or '').strip()
+    complemento = (getattr(paciente, 'complemento', None) or '').strip()
     cep = (getattr(paciente, 'cep', None) or '').strip()
-    if not logradouro or not numero:
-        log2, num2, bai2 = partir_origem_endereco(getattr(paciente, 'endereco', None) or '')
-        if not logradouro:
-            logradouro = log2
+
+    precisa_parse = (
+        not logradouro
+        or not numero
+        or (',' in logradouro and not numero)
+    )
+    if precisa_parse:
+        fonte = (getattr(paciente, 'endereco', None) or '').strip() or logradouro
+        log2, num2, bai2, comp2 = partir_endereco_completo(fonte)
+        if not logradouro or (',' in logradouro and not numero):
+            logradouro = log2 or logradouro
         if not numero:
             numero = num2
         if not bairro:
             bairro = bai2
+        if not complemento:
+            complemento = comp2
+
     return {
         'cep': cep,
         'logradouro': logradouro,
         'numero': numero,
         'bairro': bairro,
+        'complemento': complemento,
     }
 
 
@@ -5130,7 +5257,9 @@ def montar_origem_do_paciente(paciente):
     if not paciente:
         return 'Não informado'
     end = endereco_paciente_para_campos(paciente)
-    composto = compor_origem_endereco(end['logradouro'], end['numero'], end['bairro'])
+    composto = compor_endereco_paciente(
+        end['logradouro'], end['numero'], end['bairro'], end['complemento']
+    )
     return composto or ((paciente.endereco or '').strip() or 'Não informado')
 
 
@@ -6451,17 +6580,17 @@ def candidatos_abreviacao_nome_motorista(nome):
     ultimo = sig[-1]
     meios = sig[1:-1]
 
-    # Nível 1 — MARCIO S. CAMARGO / RENATO F.T. MENEZES
+    # Nível 1 — MARCIO S. CAMARGO / RENATO F. T. MENEZES
     if meios:
-        iniciais_meio = ''.join(f'{m[0].upper()}.' for m in meios if m)
+        iniciais_meio = ' '.join(f'{m[0].upper()}.' for m in meios if m)
         nivel1 = f'{primeiro} {iniciais_meio} {ultimo}'.strip()
         if nivel1 not in candidatos:
             candidatos.append(nivel1)
     # Sem meios: nada a enxugar no nível 1 além do completo
 
-    # Nível 2 — MARCIO S.C. / RENATO F.T.M.
+    # Nível 2 — MARCIO S. C. / RENATO F. T. M.
     resto = meios + [ultimo]
-    iniciais = ''.join(f'{r[0].upper()}.' for r in resto if r)
+    iniciais = ' '.join(f'{r[0].upper()}.' for r in resto if r)
     nivel2 = f'{primeiro} {iniciais}'.strip()
     if nivel2 not in candidatos:
         candidatos.append(nivel2)
@@ -6533,13 +6662,13 @@ def montar_dados_cartao_motorista(
     else:
         tels = ''
 
-    rua = numero = bairro = ''
+    rua = numero = bairro = complemento = ''
     if paciente:
-        rua = (paciente.logradouro or '').strip()
-        numero = (paciente.numero or '').strip()
-        bairro = (paciente.bairro or '').strip()
-        if not rua and paciente.endereco:
-            rua = (paciente.endereco or '').strip()
+        end = endereco_paciente_para_campos(paciente)
+        rua = end.get('logradouro') or ''
+        numero = end.get('numero') or ''
+        bairro = end.get('bairro') or ''
+        complemento = end.get('complemento') or ''
 
     ponto = parse_campo_observacao_cartao(
         agendamento.observacoes, ('OBSERVAÇÃO PONTO:', 'OBS PONTO:', 'PONTO:')
@@ -6665,6 +6794,7 @@ def montar_dados_cartao_motorista(
         'rua': _v(rua),
         'numero': _v(numero),
         'bairro': _v(bairro),
+        'complemento': _v(complemento),
         'tel': _v(tels),
         'condicao': _v(condicao),
         'tem_ac': tem_ac,
@@ -6947,9 +7077,22 @@ def gerar_html_lote_cartoes_motorista(agendamentos, titulo_extra=''):
     motorista_nome = ''
     data_ref = ''
     if agendamentos:
-        m = agendamentos[0].motorista
-        motorista_nome = m.nome if m else '—'
-        data_ref = agendamentos[0].data.strftime('%d/%m/%Y') if agendamentos[0].data else ''
+        nomes_mot = []
+        vistos = set()
+        for a in agendamentos:
+            n = (a.motorista.nome if a.motorista else '') or ''
+            if n and n not in vistos:
+                vistos.add(n)
+                nomes_mot.append(n)
+        if len(nomes_mot) == 1:
+            motorista_nome = nomes_mot[0]
+        elif len(nomes_mot) > 1:
+            motorista_nome = f'{len(nomes_mot)} motoristas'
+        datas = {a.data for a in agendamentos if a.data}
+        if len(datas) == 1:
+            data_ref = next(iter(datas)).strftime('%d/%m/%Y')
+        elif len(datas) > 1:
+            data_ref = f'{len(datas)} datas'
 
     info = f'{qtd} viagem(ns)'
     if motorista_nome:
@@ -7210,6 +7353,15 @@ def buscar_agendamentos_impressao(filtros, page, per_page, paginas):
     )
 
 
+def buscar_agendamentos_cartoes_impressao(filtros, page, per_page, paginas):
+    """Programados do filtro para impressão em lote dos Cartões do Motorista."""
+    query = query_agendamentos_programados(filtros)
+    return buscar_lista_impressao(
+        query, page, per_page, paginas,
+        Agendamento.data.asc(), Agendamento.hora.asc(), Agendamento.id.asc()
+    )
+
+
 def gerar_botoes_impressao(route_name, filtros_url, page, per_page):
     """Botões de impressão reutilizáveis nas listagens."""
     from flask import url_for
@@ -7234,8 +7386,8 @@ def gerar_botoes_impressao(route_name, filtros_url, page, per_page):
 
 def gerar_botoes_folha_espelho(filtros_url, page, per_page, qtd_programados=0, contexto=''):
     """
-    Painel Folha Espelho na listagem — imprime a programação do filtro atual
-    (Hoje, Amanhã, data específica etc.), só viagens já programadas.
+    Painel de impressão na listagem — Folha Espelho + Cartões do Motorista
+    do filtro atual (só viagens já programadas).
     """
     from flask import url_for
     from html import escape
@@ -7249,15 +7401,22 @@ def gerar_botoes_folha_espelho(filtros_url, page, per_page, qtd_programados=0, c
         'Use Programar (motorista + veículo/frota) e tente de novo.'
     )
 
-    def href(paginas):
+    def href_folha(paginas):
         return url_for('agendamentos_imprimir') + '?' + urlencode({**base, 'paginas': paginas})
+
+    def href_cartoes(paginas):
+        return (
+            url_for('agendamentos_cartoes_motorista')
+            + '?'
+            + urlencode({**base, 'paginas': paginas})
+        )
 
     if qtd <= 0:
         return f'''
     <div class="card no-print" style="margin-bottom:1rem;border-left:4px solid #adb5bd;background:#f8f9fa;">
       <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-start;justify-content:space-between;">
         <div style="min-width:220px;flex:1;">
-          <div style="font-weight:700;color:#495057;font-size:1rem;">📄 Folha Espelho — programação do filtro</div>
+          <div style="font-weight:700;color:#495057;font-size:1rem;">📄 Impressão — Folha Espelho e Cartões</div>
           <div style="margin-top:0.35rem;color:#6c757d;font-size:0.9rem;">
             Recorte: <strong>{contexto_txt}</strong>
           </div>
@@ -7265,7 +7424,9 @@ def gerar_botoes_folha_espelho(filtros_url, page, per_page, qtd_programados=0, c
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:0.45rem;align-items:center;">
           <span class="btn" style="padding:0.55rem 0.9rem;opacity:0.45;pointer-events:none;cursor:not-allowed;"
-                aria-disabled="true">Imprimir programação (0)</span>
+                aria-disabled="true">Folha Espelho (0)</span>
+          <span class="btn" style="padding:0.55rem 0.9rem;opacity:0.45;pointer-events:none;cursor:not-allowed;"
+                aria-disabled="true">Cartões (0)</span>
         </div>
       </div>
     </div>
@@ -7275,29 +7436,33 @@ def gerar_botoes_folha_espelho(filtros_url, page, per_page, qtd_programados=0, c
     <div class="card no-print" style="margin-bottom:1rem;border-left:4px solid #0d6efd;background:#f0f7ff;">
       <div style="display:flex;flex-wrap:wrap;gap:0.85rem;align-items:flex-start;justify-content:space-between;">
         <div style="min-width:240px;flex:1;">
-          <div style="font-weight:700;color:#0d47a1;font-size:1.05rem;">📄 Folha Espelho — programação do filtro</div>
+          <div style="font-weight:700;color:#0d47a1;font-size:1.05rem;">📄 Impressão — Folha Espelho e Cartões</div>
           <div style="margin-top:0.4rem;color:#334;font-size:0.92rem;">
             Recorte: <strong>{contexto_txt}</strong>
             · <strong style="color:#0d6efd;">{qtd}</strong> viagem(ns) programada(s) pronta(s) para impressão
           </div>
           <div style="margin-top:0.35rem;color:#5a6a7a;font-size:0.85rem;">
             Inclui só quem já tem <strong>motorista + veículo/frota</strong>. Cancelados e “Aguardando” ficam de fora.
-            Use os atalhos Hoje / Amanhã / data específica acima e depois imprima.
+            Folha Espelho = lista (10/página). Cartões = 1 cartão por viagem (4/folha A4 paisagem).
           </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:0.45rem;align-items:center;">
-          <a href="{href('todas')}" target="_blank" class="btn"
+          <a href="{href_folha('todas')}" target="_blank" class="btn"
              style="padding:0.55rem 1rem;background:#0d6efd;color:#fff;font-weight:700;"
              title="Imprimir Folha Espelho de todas as viagens programadas neste filtro">
-            🖨️ Imprimir todas do filtro ({qtd})
+            🖨️ Folha Espelho — todas ({qtd})
           </a>
-          <a href="{href('atual')}" target="_blank" class="btn print-btn"
+          <a href="{href_cartoes('todas')}" target="_blank" class="btn"
+             style="padding:0.55rem 1rem;background:#2e7d32;color:#fff;font-weight:700;"
+             title="Imprimir Cartão do Motorista de todas as viagens programadas neste filtro">
+            🪪 Cartões — todos ({qtd})
+          </a>
+          <a href="{href_folha('atual')}" target="_blank" class="btn print-btn"
              style="padding:0.5rem 0.85rem;font-size:0.85rem;"
-             title="Só a página atual da listagem (programados)">Página atual</a>
-          <a href="{href('1-2')}" target="_blank" class="btn print-btn"
-             style="padding:0.45rem 0.75rem;font-size:0.8rem;" title="Páginas 1–2">1–2</a>
-          <a href="{href('1-3')}" target="_blank" class="btn print-btn"
-             style="padding:0.45rem 0.75rem;font-size:0.8rem;" title="Páginas 1–3">1–3</a>
+             title="Folha Espelho só da página atual">Folha · pág. atual</a>
+          <a href="{href_cartoes('atual')}" target="_blank" class="btn print-btn"
+             style="padding:0.5rem 0.85rem;font-size:0.85rem;"
+             title="Cartões só da página atual">Cartões · pág. atual</a>
         </div>
       </div>
     </div>
@@ -10492,7 +10657,7 @@ def create_app():
                     tel_res = request.form.get('tel_res', '').strip()
                     data_nascimento = request.form.get('data_nascimento')
                     cep = request.form.get('cep', '').strip()
-                    logradouro, numero, bairro, endereco = montar_endereco_paciente_de_form(request.form)
+                    logradouro, numero, bairro, complemento, endereco = montar_endereco_paciente_de_form(request.form)
                     ponto_referencia = request.form.get('ponto_referencia', '').strip()
                     cartao_sus = request.form.get('cns', '').strip()
                     observacoes = request.form.get('observacoes', '').strip()
@@ -10546,6 +10711,7 @@ def create_app():
                         logradouro=logradouro if logradouro else None,
                         numero=numero if numero else None,
                         bairro=bairro if bairro else None,
+                        complemento=complemento if complemento else None,
                         ponto_referencia=ponto_referencia if ponto_referencia else None,
                         cartao_sus=cartao_sus if cartao_sus else None,
                         observacoes=observacoes if observacoes else None
@@ -10672,6 +10838,14 @@ def create_app():
                                        oninput="this.value=this.value.toLocaleUpperCase('pt-BR'); montarEnderecoCompletoPaciente()">
                             </div>
                             <div class="form-group">
+                                <label for="complemento">Complemento</label>
+                                <input type="text" id="complemento" name="complemento" placeholder="Ex: ATRÁS DA DELEGACIA, APTO 12..."
+                                       style="text-transform:uppercase;"
+                                       oninput="this.value=this.value.toLocaleUpperCase('pt-BR'); montarEnderecoCompletoPaciente()">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label for="ponto_referencia">Ponto de Referência</label>
                                 <input type="text" id="ponto_referencia" name="ponto_referencia" placeholder="Ex: Próximo ao hospital..."
                                        style="text-transform:uppercase;"
@@ -10680,7 +10854,7 @@ def create_app():
                         </div>
                         <input type="hidden" id="endereco" name="endereco" value="">
                         <small style="color:var(--gray-color);display:block;margin:-0.25rem 0 1rem;">
-                            O endereço completo é montado automaticamente com logradouro, número e bairro (via CEP).
+                            O endereço completo é montado automaticamente com logradouro, número, bairro e complemento.
                         </small>
                     </div>
                     
@@ -10712,10 +10886,12 @@ def create_app():
                     const log = (document.getElementById('logradouro')?.value || '').trim();
                     const num = (document.getElementById('numero')?.value || '').trim();
                     const bai = (document.getElementById('bairro')?.value || '').trim();
+                    const comp = (document.getElementById('complemento')?.value || '').trim();
                     const partes = [];
                     if (log) partes.push(log);
-                    if (num) partes.push('Nº ' + num);
+                    if (num) partes.push(num);
                     if (bai) partes.push(bai);
+                    if (comp) partes.push(comp);
                     const el = document.getElementById('endereco');
                     if (el) el.value = partes.join(', ');
                 }}
@@ -10828,7 +11004,7 @@ def create_app():
                 tel_res = request.form.get('tel_res', '').strip()
                 data_nascimento = request.form.get('data_nascimento')
                 cep = request.form.get('cep', '').strip()
-                logradouro, numero, bairro, endereco = montar_endereco_paciente_de_form(request.form)
+                logradouro, numero, bairro, complemento, endereco = montar_endereco_paciente_de_form(request.form)
                 ponto_referencia = request.form.get('ponto_referencia', '').strip()
                 cartao_sus = request.form.get('cns', '').strip()
                 observacoes = request.form.get('observacoes', '').strip()
@@ -10878,6 +11054,7 @@ def create_app():
                 paciente.logradouro = logradouro if logradouro else None
                 paciente.numero = numero if numero else None
                 paciente.bairro = bairro if bairro else None
+                paciente.complemento = complemento if complemento else None
                 paciente.ponto_referencia = ponto_referencia if ponto_referencia else None
                 paciente.cartao_sus = cartao_sus if cartao_sus else None
                 paciente.observacoes = observacoes if observacoes else None
@@ -10995,6 +11172,15 @@ def create_app():
                                    oninput="this.value=this.value.toLocaleUpperCase('pt-BR'); montarEnderecoCompletoPaciente()">
                         </div>
                         <div class="form-group">
+                            <label for="complemento">Complemento</label>
+                            <input type="text" id="complemento" name="complemento" value="{paciente.complemento or ''}"
+                                   placeholder="Ex: ATRÁS DA DELEGACIA, APTO 12..."
+                                   style="text-transform:uppercase;"
+                                   oninput="this.value=this.value.toLocaleUpperCase('pt-BR'); montarEnderecoCompletoPaciente()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="ponto_referencia">Ponto de Referência</label>
                             <input type="text" id="ponto_referencia" name="ponto_referencia" value="{paciente.ponto_referencia or ''}" placeholder="Ex: Próximo ao hospital..."
                                    style="text-transform:uppercase;"
@@ -11003,7 +11189,7 @@ def create_app():
                     </div>
                     <input type="hidden" id="endereco" name="endereco" value="{paciente.endereco or ''}">
                     <small style="color:var(--gray-color);display:block;margin:-0.25rem 0 1rem;">
-                        O endereço completo é montado automaticamente com logradouro, número e bairro (via CEP).
+                        O endereço completo é montado automaticamente com logradouro, número, bairro e complemento.
                     </small>
                 </div>
                 
@@ -11039,10 +11225,12 @@ def create_app():
                 const log = (document.getElementById('logradouro')?.value || '').trim();
                 const num = (document.getElementById('numero')?.value || '').trim();
                 const bai = (document.getElementById('bairro')?.value || '').trim();
+                const comp = (document.getElementById('complemento')?.value || '').trim();
                 const partes = [];
                 if (log) partes.push(log);
-                if (num) partes.push('Nº ' + num);
+                if (num) partes.push(num);
                 if (bai) partes.push(bai);
+                if (comp) partes.push(comp);
                 const el = document.getElementById('endereco');
                 if (el) el.value = partes.join(', ');
             }}
@@ -14201,6 +14389,29 @@ def create_app():
         )
         html = gerar_html_impressao_agendamentos(lista, filtros, pag_ini, pag_fim, per_page)
         return html
+
+    @app.route('/agendamentos/cartoes-motorista')
+    @login_required
+    def agendamentos_cartoes_motorista():
+        """
+        Impressão em lote dos Cartões do Motorista do filtro atual
+        (todas / página atual) — 1 cartão por viagem programada.
+        """
+        filtros = obter_filtros_agendamentos_request()
+        page, per_page = obter_paginacao_request()
+        paginas = request.args.get('paginas', 'todas')
+        lista, total, total_pages, pag_ini, pag_fim = buscar_agendamentos_cartoes_impressao(
+            filtros, page, per_page, paginas
+        )
+        # Reforço: só elegíveis (mesma regra do cartão individual)
+        lista = [a for a in lista if agendamento_elegivel_cartao_motorista(a)[0]]
+        resumo = resumo_filtros_agendamentos(filtros)
+        if paginas != 'todas':
+            resumo += f' · Páginas: {pag_ini}–{pag_fim}'
+        html = gerar_html_lote_cartoes_motorista(lista, titulo_extra=resumo)
+        resp = app.response_class(html, mimetype='text/html')
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return resp
 
     @app.route('/agendamentos/<int:agendamento_id>/folha-espelho')
     @login_required

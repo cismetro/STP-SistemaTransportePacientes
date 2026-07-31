@@ -1,18 +1,8 @@
-..
-## Resultado Esperado
 
-A Folha Espelho deverá apresentar um layout limpo, padronizado e de fácil leitura, permitindo que os atendentes utilizem a impressão como uma **Lista de Controle de Pacientes**, contendo exatamente dez registros por página, cabeçalho repetido automaticamente, rodapé institucional discreto, paginação automática e todas as informações provenientes do banco de dados, preservando integralmente o funcionamento já existente do sistema.
+CADASTRO PACIENTE
+Vejo que o PONTO: Está sempre usando Residência e tenho um exemplo aqui em mão que tras alguns pontos especifico
+Não seria interessante ter um imput na hora de cadastrar o paciente pra inserir o ponto e este mesmo ponto sair impresso na folha espelho???
 
 
-Checklist de teste
-
-Reiniciar STP e abrir /agendamentos
-Filtro com < 10 programados → 1 página, título + data + rodapé
-Exatamente 10 → 1 página cheia
-Mais de 10 → páginas extras, cabeçalho em todas, Página X de Y
-Registro sem acompanhante → sem Nome/Telefone Ac.
-Registro com acompanhante → Nome Ac. e Telefone Ac. preenchidos
-Dia da semana e data batem com os agendamentos
-Ao imprimir, horário atualiza (não fica --:-- / valor fixo)
-Rótulos em negrito, valores em fonte normal, sem sobreposição
-Impressão A4 paisagem
+ENDEREÇO PACIENTE
+Uma pergunta os campos serão  estruturado somente na impressão ou tbm na hora de inserir os dados no formulario?? Me lembro que sim.. não code nada apenas responda sim ou não.. 

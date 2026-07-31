@@ -1,0 +1,20 @@
+CHECKLIST — Cartões do Motorista: imprimir TODOS de uma vez
+============================================================
+Programados filtro Hoje: 22
+Cartões gerados: 22
+Folhas A4 (4 cartões/folha): ~6
+Arquivo: D:\Projetos\python\STP-SistemaTransportePacientes\AJUSTES\TESTE_CartoesMotorista_Todos.html
+
+COMO TESTAR (reinicie o STP):
+1. http://127.0.0.1:5022/transporte/agendamentos
+2. Atalho HOJE
+3. Painel azul → botão verde [Cartões — todos (N)]
+4. Ou URL:
+   http://127.0.0.1:5022/transporte/agendamentos/cartoes-motorista?periodo=hoje&paginas=todas
+
+VALIDAR:
+[ ] Nova aba com todos os cartões do filtro
+[ ] 1 cartão por viagem programada (= N do botão)
+[ ] 4 cartões por folha A4 paisagem
+[ ] Individual (ícone na linha / Programar) continua ok
+[ ] Folha Espelho — todas continua ok

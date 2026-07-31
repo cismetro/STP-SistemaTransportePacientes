@@ -1,0 +1,33 @@
+CHECKLIST — Folha Espelho: Imprimir TODAS de uma vez
+============================================================
+Data do teste: 31/07/2026
+Registros programados (filtro Hoje): 22
+Registros na impressao paginas=todas: 22 (total query=22)
+Blocos na Folha gerada: 22
+Paginas HTML (10/folha): 3 (esperado 3)
+Arquivo gerado: D:\Projetos\python\STP-SistemaTransportePacientes\AJUSTES\TESTE_FolhaEspelho_ImprimirTodas.html
+
+COMO TESTAR NO SISTEMA (apos reiniciar STP):
+1. Login em http://127.0.0.1:5022/transporte/login
+2. Abrir Agendamentos: http://127.0.0.1:5022/transporte/agendamentos
+3. Clicar no atalho HOJE (filtro do dia)
+4. No painel azul Folha Espelho, clicar:
+      [Imprimir todas do filtro (N)]
+5. Nova aba deve abrir com a Folha Espelho
+
+VALIDAR:
+[ x] Abriu em nova aba (nao substituiu a listagem)
+[x] Quantidade impressa = N do botao (so programados)
+[ x] Paginas = ceil(N/10)  — com 22 registros deve ser 3
+[x ] Cada pagina tem no maximo 10 registros
+[ x] Cabecalho LISTA DE CONTROLE + DATA + subtítulos em todas as paginas
+[x ] Rodape: Pagina X de Y + HORARIO em todas as paginas
+[x ] Nome do motorista longo abreviado (ex.: MARCIO S. CAMARGO) sem quebrar linha
+[x ] Cadastro do motorista no sistema continua com nome completo
+[x ] Botao Imprimir do navegador (Ctrl+P) em A4 paisagem
+
+URL direta (com STP rodando e logado):
+http://127.0.0.1:5022/transporte/agendamentos/imprimir?periodo=hoje&paginas=todas
+
+Arquivo offline para inspecionar layout:
+D:\Projetos\python\STP-SistemaTransportePacientes\AJUSTES\TESTE_FolhaEspelho_ImprimirTodas.html
