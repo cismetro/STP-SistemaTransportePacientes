@@ -10068,19 +10068,19 @@ def create_app():
             alert_class = "alert-error" if category == "error" else "alert-success"
             messages_html += f'<div class="alert {alert_class}">{message}</div>'
         
+        hero_url = url_for('static', filename='img/ambulancia.webp')
         return f'''
-        <html>
+        <!DOCTYPE html>
+        <html lang="pt-BR">
         <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Login - Sistema de Transporte</title>
-            
-            <!-- Favicon -->
-            <link rel="icon" href="/static/img/favicon.ico" type="image/x-icon">
-            <link rel="shortcut icon" href="/static/img/favicon.ico">
-            
+            <link rel="icon" href="{url_for('static', filename='img/favicon.ico')}" type="image/x-icon">
+            <link rel="shortcut icon" href="{url_for('static', filename='img/favicon.ico')}">
             <style>
                 :root {{
                     --color-100: #ffffff;
-                    --color-95: #ebf9f9;
                     --primary-color: #4fc9c4;
                     --primary-dark: #43aca7;
                     --primary-hover: #3c9b96;
@@ -10092,63 +10092,185 @@ def create_app():
                     --input-focus: #4fc9c4;
                     --input-focus-shadow: rgba(79, 201, 196, 0.25);
                 }}
-                
-                body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); min-height: 100vh; display: flex; align-items: center; justify-content: center; }}
-                .login-container {{ background: var(--color-100); padding: 2rem; border-radius: 1rem; box-shadow: 0 0.5rem 2rem rgba(0,0,0,0.2); max-width: 400px; width: 100%; }}
-                .header {{ text-align: center; margin-bottom: 2rem; }}
-                .header h1 {{ color: var(--primary-color); margin: 0; }}
-                .header p {{ color: var(--gray-color); margin: 0.5rem 0 0 0; }}
+                * {{ box-sizing: border-box; }}
+                html, body {{ margin: 0; padding: 0; height: 100%; }}
+                body {{
+                    font-family: Arial, Helvetica, sans-serif;
+                    color: var(--text-color);
+                    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+                    overflow: hidden;
+                }}
+                .login-split {{
+                    display: flex;
+                    width: 100%;
+                    height: 100vh;
+                    min-height: 100vh;
+                }}
+                .login-panel {{
+                    width: 480px;
+                    min-width: 420px;
+                    max-width: 520px;
+                    flex: 0 0 auto;
+                    height: 100%;
+                    background: linear-gradient(160deg, var(--primary-color) 0%, var(--primary-dark) 55%, var(--primary-hover) 100%);
+                    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.18);
+                    z-index: 2;
+                    display: flex;
+                    flex-direction: column;
+                    overflow-y: auto;
+                }}
+                .login-panel-inner {{
+                    width: 100%;
+                    max-width: 400px;
+                    margin: auto;
+                    padding: 2.5rem 2rem;
+                }}
+                .login-card {{
+                    background: var(--color-100);
+                    border-radius: 1rem;
+                    padding: 1.75rem 1.5rem;
+                    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.18);
+                }}
+                .login-brand {{ text-align: center; margin-bottom: 1.5rem; }}
+                .login-brand .logo {{
+                    width: 72px; height: 72px; border-radius: 1rem;
+                    display: inline-flex; align-items: center; justify-content: center;
+                    font-size: 2rem; margin-bottom: 1rem;
+                    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+                    color: #fff; box-shadow: 0 8px 20px rgba(79, 201, 196, 0.35);
+                }}
+                .login-brand h1 {{
+                    margin: 0; font-size: 1.35rem; font-weight: 700;
+                    color: var(--primary-color); line-height: 1.3;
+                }}
+                .login-brand p {{
+                    margin: 0.4rem 0 0; font-size: 0.95rem; color: var(--gray-color);
+                }}
+                .login-messages {{ margin-bottom: 0.75rem; }}
                 .form-group {{ margin-bottom: 1rem; }}
-                .form-group label {{ display: block; margin-bottom: 0.5rem; color: var(--text-color); font-weight: 600; }}
-                .form-group input {{ width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 0.5rem; font-size: 1rem; box-sizing: border-box; }}
+                .form-group label {{
+                    display: block; margin-bottom: 0.5rem;
+                    color: var(--text-color); font-weight: 600;
+                }}
+                .form-group input {{
+                    width: 100%; padding: 0.75rem;
+                    border: 2px solid var(--border-color); border-radius: 0.5rem;
+                    font-size: 1rem; background: #fff; color: var(--text-color);
+                }}
                 .form-group input:hover:not(:disabled) {{ border-color: var(--primary-dark); }}
-                .form-group input:focus {{ border-color: var(--input-focus); outline: none; box-shadow: 0 0 0 3px var(--input-focus-shadow); }}
-                .form-group input:focus-visible, .btn:focus-visible, .password-toggle:focus-visible {{ outline: 2px solid var(--primary-color); outline-offset: 2px; }}
+                .form-group input:focus {{
+                    border-color: var(--input-focus); outline: none;
+                    box-shadow: 0 0 0 3px var(--input-focus-shadow);
+                }}
+                .form-group input:focus-visible,
+                .btn:focus-visible,
+                .password-toggle:focus-visible {{
+                    outline: 2px solid var(--primary-color); outline-offset: 2px;
+                }}
                 .password-field {{ position: relative; }}
                 .password-field input {{ padding-right: 2.75rem; }}
                 .password-toggle {{
                     position: absolute; right: 0.55rem; top: 50%; transform: translateY(-50%);
-                    width: 2rem; height: 2rem; border: none; background: transparent; color: var(--gray-color);
-                    cursor: pointer; border-radius: 0.35rem; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+                    width: 2rem; height: 2rem; border: none; background: transparent;
+                    color: var(--gray-color); cursor: pointer; border-radius: 0.35rem;
+                    display: inline-flex; align-items: center; justify-content: center; padding: 0;
                 }}
-                .password-toggle:hover {{ color: var(--primary-dark); background: rgba(79, 201, 196, 0.12); }}
-                .password-toggle svg {{ width: 1.15rem; height: 1.15rem; display: block; pointer-events: none; }}
-                .required-mark {{ color: var(--danger-color); font-weight: 700; margin-left: 0.15rem; }}
-                .btn {{ width: 100%; padding: 0.75rem; background: var(--primary-color); color: var(--color-100); border: none; border-radius: 0.5rem; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease; }}
-                .btn:hover {{ background: var(--primary-dark); }}
+                .password-toggle:hover {{
+                    color: var(--primary-dark); background: rgba(79, 201, 196, 0.12);
+                }}
+                .password-toggle svg {{
+                    width: 1.15rem; height: 1.15rem; display: block; pointer-events: none;
+                }}
+                .required-mark {{
+                    color: var(--danger-color); font-weight: 700; margin-left: 0.15rem;
+                }}
+                .btn {{
+                    width: 100%; padding: 0.85rem; margin-top: 0.35rem;
+                    background: var(--primary-color); color: var(--color-100);
+                    border: none; border-radius: 0.5rem; font-size: 1rem;
+                    font-weight: 600; cursor: pointer;
+                    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+                }}
+                .btn:hover {{
+                    background: var(--primary-dark);
+                    box-shadow: 0 8px 18px rgba(79, 201, 196, 0.28);
+                }}
                 .btn:active {{ background: var(--primary-hover); }}
                 .alert {{ padding: 0.75rem; margin-bottom: 1rem; border-radius: 0.5rem; }}
-                .alert-error {{ background: rgba(232, 29, 81, 0.1); color: var(--danger-color); border: 1px solid var(--danger-color); }}
-                .alert-success {{ background: rgba(121, 178, 74, 0.1); color: var(--success-color); border: 1px solid var(--success-color); }}
+                .alert-error {{
+                    background: rgba(232, 29, 81, 0.1); color: var(--danger-color);
+                    border: 1px solid var(--danger-color);
+                }}
+                .alert-success {{
+                    background: rgba(121, 178, 74, 0.1); color: var(--success-color);
+                    border: 1px solid var(--success-color);
+                }}
+                .login-hero {{
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    height: 100%;
+                    background-color: #1a3a3a;
+                    background-image: url("{hero_url}");
+                    background-position: center center;
+                    background-repeat: no-repeat;
+                    background-size: cover;
+                }}
+                @media (max-width: 992px) {{
+                    .login-panel {{
+                        width: 420px; min-width: 420px; max-width: 420px;
+                    }}
+                    .login-panel-inner {{ padding: 2rem 1.5rem; }}
+                }}
+                @media (max-width: 768px) {{
+                    body {{ overflow: auto; }}
+                    .login-split {{
+                        flex-direction: column; height: auto; min-height: 100vh;
+                    }}
+                    .login-panel {{
+                        width: 100%; min-width: 0; max-width: none;
+                        min-height: 100vh; box-shadow: none;
+                    }}
+                    .login-hero {{ display: none; }}
+                }}
             </style>
         </head>
         <body>
-            <div class="login-container">
-                <div class="header">
-                    <h1>🚑 Sistema de Transporte</h1>
-                    <p>Prefeitura Municipal de Cosmópolis</p>
-                </div>
-                
-                {messages_html}
-                
-                <form method="POST" novalidate>
-                    <div class="form-group">
-                        <label for="username">Usuário <span class="required-mark" aria-hidden="true">*</span></label>
-                        <input type="text" id="username" name="username" required
-                               placeholder="Digite seu usuário" autocomplete="username" autofocus>
+            <div class="login-split">
+                <aside class="login-panel" aria-label="Área de autenticação">
+                    <div class="login-panel-inner">
+                        <div class="login-card">
+                            <div class="login-brand">
+                                <div class="logo" aria-hidden="true">🚑</div>
+                                <h1>Sistema de Transporte</h1>
+                                <p>Prefeitura Municipal de Cosmópolis</p>
+                            </div>
+
+                            <div class="login-messages">{messages_html}</div>
+
+                            <form method="POST" novalidate>
+                                <div class="form-group">
+                                    <label for="username">Usuário <span class="required-mark" aria-hidden="true">*</span></label>
+                                    <input type="text" id="username" name="username" required
+                                           placeholder="Digite seu usuário" autocomplete="username" autofocus>
+                                </div>
+
+                                {html_campo_senha(
+                                    input_id='password',
+                                    name='password',
+                                    label='Senha',
+                                    required=True,
+                                    placeholder='Digite sua senha',
+                                    autocomplete='current-password',
+                                )}
+
+                                <button type="submit" class="btn">Entrar</button>
+                            </form>
+                        </div>
                     </div>
-                    
-                    {html_campo_senha(
-                        input_id='password',
-                        name='password',
-                        label='Senha',
-                        required=True,
-                        placeholder='Digite sua senha',
-                        autocomplete='current-password',
-                    )}
-                    
-                    <button type="submit" class="btn">Entrar</button>
-                </form>
+                </aside>
+                <div class="login-hero"
+                     role="img"
+                     aria-label="Ambulância do serviço de transporte de pacientes"></div>
             </div>
             <script>
             (function() {{
