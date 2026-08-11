@@ -111,22 +111,130 @@ def obter_emoji_horario():
 from functools import wraps
 
 
-# 🆕 DECORADORES DE PERMISSÃO FINANCEIRA
+# ===== CONTROLE DE ACESSO POR PERFIL (menor privilégio) =====
+TIPOS_USUARIO_VALIDOS = ('atendente', 'supervisor', 'contador', 'administrador')
+
+# Permissões por perfil. Administrador tem acesso total via '*'.
+ROLE_PERMISSIONS = {
+    'administrador': {'*'},
+    'supervisor': {
+        'dashboard.ver',
+        'agendamentos.ver', 'agendamentos.criar', 'agendamentos.editar',
+        'agendamentos.excluir', 'agendamentos.imprimir',
+        'pacientes.ver', 'pacientes.criar', 'pacientes.editar',
+        'pacientes.excluir', 'pacientes.imprimir',
+        'acompanhantes.ver', 'acompanhantes.criar', 'acompanhantes.editar',
+        'acompanhantes.excluir', 'acompanhantes.imprimir',
+        'motoristas.ver', 'motoristas.criar', 'motoristas.editar',
+        'motoristas.excluir', 'motoristas.imprimir',
+        'veiculos.ver', 'veiculos.criar', 'veiculos.editar',
+        'veiculos.excluir', 'veiculos.imprimir',
+        'frota.ver', 'frota.operar', 'frota.editar',
+        'relatorios.ver',
+        'faturamento.ver',
+        'sistema.cnes_sync',
+    },
+    'atendente': {
+        'dashboard.ver',
+        'agendamentos.ver', 'agendamentos.criar', 'agendamentos.editar',
+        'agendamentos.imprimir',
+        'pacientes.ver', 'pacientes.criar', 'pacientes.editar', 'pacientes.imprimir',
+        'acompanhantes.ver', 'acompanhantes.criar', 'acompanhantes.editar',
+        'acompanhantes.imprimir',
+        'motoristas.ver', 'motoristas.imprimir',
+        'veiculos.ver', 'veiculos.imprimir',
+        'frota.ver', 'frota.operar',
+        'relatorios.ver',
+    },
+    'contador': {
+        'dashboard.ver',
+        'agendamentos.ver', 'agendamentos.imprimir',
+        'pacientes.ver', 'pacientes.imprimir',
+        'acompanhantes.ver',
+        'motoristas.ver',
+        'veiculos.ver',
+        'frota.ver',
+        'relatorios.ver',
+        'faturamento.ver', 'faturamento.gerenciar',
+    },
+}
+
+
+def usuario_tem_permissao(user, permissao):
+    """Verifica se o usuário autenticado possui a permissão (código.ação)."""
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if not getattr(user, 'ativo', True):
+        return False
+    tipo = (getattr(user, 'tipo_usuario', None) or '').strip().lower()
+    perms = ROLE_PERMISSIONS.get(tipo, set())
+    if '*' in perms:
+        return True
+    return permissao in perms
+
+
+def pagina_acesso_negado(mensagem=None):
+    """Resposta amigável 403 (sem detalhes internos)."""
+    from flask import make_response, url_for
+    msg = mensagem or 'Seu usuário não possui permissão para acessar esta funcionalidade.'
+    dash = '#'
+    try:
+        dash = url_for('dashboard')
+    except Exception:
+        pass
+    html = f'''<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acesso não autorizado - STP</title>
+<style>
+body{{font-family:Arial,Helvetica,sans-serif;background:#f4f7f7;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;color:#3f485d}}
+.card{{background:#fff;border-radius:12px;padding:2rem;max-width:28rem;box-shadow:0 8px 28px rgba(0,0,0,.08);border:1px solid #e5e5e5;text-align:center}}
+h1{{margin:0 0 .5rem;font-size:1.35rem;color:#e81d51}}
+p{{margin:0 0 1.25rem;font-size:.95rem;line-height:1.45}}
+a{{display:inline-block;padding:.7rem 1.2rem;background:#4fc9c4;color:#fff;text-decoration:none;border-radius:.5rem;font-weight:600}}
+a:hover{{background:#43aca7}}
+</style></head><body>
+<div class="card">
+  <h1>Acesso não autorizado</h1>
+  <p>{msg}</p>
+  <a href="{dash}">Voltar ao início</a>
+</div></body></html>'''
+    return make_response(html, 403)
+
+
+def permission_required(*permissoes):
+    """Exige login + ao menos uma das permissões listadas."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+            if not any(usuario_tem_permissao(current_user, p) for p in permissoes):
+                if request.path.startswith('/api/') or request.accept_mimetypes.best == 'application/json':
+                    return jsonify({'error': 'Acesso não autorizado'}), 403
+                flash('Acesso não autorizado. Seu usuário não possui permissão para esta funcionalidade.', 'error')
+                return pagina_acesso_negado()
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+# Decoradores financeiros (compatíveis com a matriz ROLE_PERMISSIONS)
 def contador_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.can_manage_finances():
+        if not current_user.is_authenticated or not usuario_tem_permissao(current_user, 'faturamento.gerenciar'):
             flash('Acesso negado! Apenas contadores e administradores podem acessar esta página.', 'error')
-            return redirect(url_for('dashboard'))
+            return pagina_acesso_negado('Apenas contadores e administradores podem gerenciar faturamento.')
         return f(*args, **kwargs)
     return decorated_function
 
 def finance_view_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.can_view_finances():
+        if not current_user.is_authenticated or not usuario_tem_permissao(current_user, 'faturamento.ver'):
             flash('Acesso negado! Permissão insuficiente para visualizar dados financeiros.', 'error')
-            return redirect(url_for('dashboard'))
+            return pagina_acesso_negado('Permissão insuficiente para visualizar dados financeiros.')
         return f(*args, **kwargs)
     return decorated_function
 
@@ -183,17 +291,21 @@ class Usuario(db.Model):
     def is_contador(self):
         return self.tipo_usuario == 'contador'
 
+    def pode(self, permissao):
+        """Verifica permissão granular (ex.: 'agendamentos.excluir')."""
+        return usuario_tem_permissao(self, permissao)
+
     def can_manage_finances(self):
         """Quem pode gerenciar finanças: contador e administrador"""
-        return self.tipo_usuario in ['contador', 'administrador']
+        return self.pode('faturamento.gerenciar')
 
     def can_view_finances(self):
         """Quem pode visualizar relatórios financeiros: contador, supervisor e administrador"""
-        return self.tipo_usuario in ['contador', 'supervisor', 'administrador']
+        return self.pode('faturamento.ver')
 
     def can_generate_invoices(self):
         """Quem pode gerar faturas: apenas contador e administrador"""
-        return self.tipo_usuario in ['contador', 'administrador']
+        return self.pode('faturamento.gerenciar')
 
 class Paciente(db.Model):
     __tablename__ = 'pacientes'
@@ -857,9 +969,7 @@ def telefone_whatsapp_paciente(paciente):
 
 def _whatsapp_admin_required():
     """Somente administrador gerencia o módulo WhatsApp."""
-    if not current_user.is_authenticated or current_user.tipo_usuario != 'administrador':
-        return False
-    return True
+    return usuario_tem_permissao(current_user, 'sistema.whatsapp')
 
 
 WHATSAPP_TELEFONE_CENTRAL = os.environ.get('MUNICIPIO_TELEFONE', '(19) 3872-1234')
@@ -9210,7 +9320,7 @@ def svg_van_sutil():
 
 
 def gerar_sidebar_nav(ativo=""):
-    """Sidebar vertical moderna com grupos de menu."""
+    """Sidebar vertical moderna com grupos de menu filtrados por permissão."""
     from flask import url_for
 
     def item(route, label, icon, key=None):
@@ -9221,25 +9331,56 @@ def gerar_sidebar_nav(ativo=""):
             f'<span class="stp-nav-icon">{icon}</span><span>{label}</span></a>'
         )
 
-    ag_cls = 'stp-nav-link stp-nav-destaque active' if ativo == 'agendamentos' else 'stp-nav-link stp-nav-destaque'
-    ag_link = (
-        f'<a href="{url_for("agendamentos")}" class="{ag_cls}">'
-        f'<span class="stp-nav-icon">📅</span><span>Agendamentos</span></a>'
-    )
+    def can(perm):
+        return current_user.is_authenticated and usuario_tem_permissao(current_user, perm)
 
-    admin_extra = ''
-    if current_user.is_authenticated:
-        if hasattr(current_user, 'can_view_finances') and current_user.can_view_finances():
-            admin_extra += item('faturamento', 'Faturamento', '💰', 'faturamento')
-        if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'administrador':
-            admin_extra += item('usuarios', 'Usuários', '👤', 'usuarios')
-            admin_extra += item('whatsapp_dashboard', 'WhatsApp', '📱', 'whatsapp')
+    ag_link = ''
+    if can('agendamentos.ver'):
+        ag_cls = 'stp-nav-link stp-nav-destaque active' if ativo == 'agendamentos' else 'stp-nav-link stp-nav-destaque'
+        ag_link = (
+            f'<a href="{url_for("agendamentos")}" class="{ag_cls}">'
+            f'<span class="stp-nav-icon">📅</span><span>Agendamentos</span></a>'
+        )
 
-    sistema_section = f'''
-        <div class="stp-nav-section">Sistema</div>
-        {item('backup_dashboard', 'Backup', '💾', 'backup')}
-        {admin_extra}
-    '''
+    op_items = ''
+    if can('dashboard.ver'):
+        op_items += item('dashboard', 'Início', '🏠', 'dashboard')
+    op_section = f'<div class="stp-nav-section">Operação</div>{op_items}' if op_items else ''
+
+    cad_items = ''
+    if can('pacientes.ver'):
+        cad_items += item('pacientes', 'Pacientes', '👥', 'pacientes')
+    if can('acompanhantes.ver'):
+        cad_items += item('acompanhantes', 'Acompanhantes', '🧑‍🤝‍🧑', 'acompanhantes')
+    if can('motoristas.ver'):
+        cad_items += item('motoristas', 'Motoristas', '👨‍💼', 'motoristas')
+    if can('veiculos.ver'):
+        cad_items += item('veiculos', 'Veículos', '🚐', 'veiculos')
+    cad_section = f'<div class="stp-nav-section">Cadastros</div>{cad_items}' if cad_items else ''
+
+    frota_items = ''
+    if can('frota.ver'):
+        frota_items += item('uso_veiculos', 'Controle de Uso', '📋', 'uso_veiculos')
+        frota_items += item('combustivel_dashboard', 'Combustível', '⛽', 'combustivel')
+    frota_section = f'<div class="stp-nav-section">Frota</div>{frota_items}' if frota_items else ''
+
+    rel_section = ''
+    if can('relatorios.ver'):
+        rel_section = f'''
+            <div class="stp-nav-section">Relatórios</div>
+            {item('relatorios', 'Relatórios', '📊', 'relatorios')}
+        '''
+
+    sistema_items = ''
+    if can('backup.acessar'):
+        sistema_items += item('backup_dashboard', 'Backup', '💾', 'backup')
+    if can('faturamento.ver'):
+        sistema_items += item('faturamento', 'Faturamento', '💰', 'faturamento')
+    if can('usuarios.gerenciar'):
+        sistema_items += item('usuarios', 'Usuários', '👤', 'usuarios')
+    if can('sistema.whatsapp'):
+        sistema_items += item('whatsapp_dashboard', 'WhatsApp', '📱', 'whatsapp')
+    sistema_section = f'<div class="stp-nav-section">Sistema</div>{sistema_items}' if sistema_items else ''
 
     return f'''
     <aside class="stp-sidebar no-print" id="stpSidebar">
@@ -9253,23 +9394,10 @@ def gerar_sidebar_nav(ativo=""):
 
         <nav class="stp-sidebar-nav">
             {ag_link}
-
-            <div class="stp-nav-section">Operação</div>
-            {item('dashboard', 'Início', '🏠', 'dashboard')}
-
-            <div class="stp-nav-section">Cadastros</div>
-            {item('pacientes', 'Pacientes', '👥', 'pacientes')}
-            {item('acompanhantes', 'Acompanhantes', '🧑‍🤝‍🧑', 'acompanhantes')}
-            {item('motoristas', 'Motoristas', '👨‍💼', 'motoristas')}
-            {item('veiculos', 'Veículos', '🚐', 'veiculos')}
-
-            <div class="stp-nav-section">Frota</div>
-            {item('uso_veiculos', 'Controle de Uso', '📋', 'uso_veiculos')}
-            {item('combustivel_dashboard', 'Combustível', '⛽', 'combustivel')}
-
-            <div class="stp-nav-section">Relatórios</div>
-            {item('relatorios', 'Relatórios', '📊', 'relatorios')}
-
+            {op_section}
+            {cad_section}
+            {frota_section}
+            {rel_section}
             {sistema_section}
         </nav>
 
@@ -10045,7 +10173,10 @@ def create_app():
                 if user:
                     print(f"🔐 Verificando senha para usuário: {user.username}")
                     
-                    if user.check_password(password):
+                    if not user.ativo:
+                        flash('Usuário inativo. Solicite reativação ao administrador.', 'error')
+                        print(f"❌ Usuário inativo: {user.username}")
+                    elif user.check_password(password):
                         login_user(user)
                         session.pop('_flashes', None)
                         flash('Login realizado com sucesso!', 'success')
@@ -10299,6 +10430,7 @@ def create_app():
     # ===== DASHBOARD =====
     @app.route('/dashboard')
     @login_required
+    @permission_required('dashboard.ver')
     def dashboard():
         # Buscar dados reais do banco
         hoje = date.today()
@@ -10665,6 +10797,7 @@ def create_app():
     
     @app.route('/dashboard_api')
     @login_required
+    @permission_required('dashboard.ver')
     def dashboard_api():
         try:
             print("🔄 API Dashboard chamada!")
@@ -10714,6 +10847,7 @@ def create_app():
     # ===== PACIENTES =====
     @app.route('/pacientes')
     @login_required
+    @permission_required('pacientes.ver')
     def pacientes():
         filtros = obter_filtros_pacientes_request()
         page, per_page = obter_paginacao_request()
@@ -10828,6 +10962,7 @@ def create_app():
 
     @app.route('/pacientes/imprimir')
     @login_required
+    @permission_required('pacientes.imprimir')
     def pacientes_imprimir():
         filtros = obter_filtros_pacientes_request()
         page, per_page = obter_paginacao_request()
@@ -10842,6 +10977,7 @@ def create_app():
     # ===== CADASTAR PACIENTES =====
     @app.route('/pacientes/cadastrar', methods=['GET', 'POST'])
     @login_required
+    @permission_required('pacientes.criar')
     def pacientes_cadastrar():
             if request.method == 'POST':
                 try:
@@ -11189,6 +11325,7 @@ def create_app():
     
     @app.route('/pacientes/editar/<int:paciente_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('pacientes.editar')
     def pacientes_editar(paciente_id):
         paciente = db.session.get(Paciente, paciente_id)
         if not paciente:
@@ -11520,6 +11657,7 @@ def create_app():
     
     @app.route('/pacientes/<int:paciente_id>/acompanhantes/novo', methods=['POST'])
     @login_required
+    @permission_required('pacientes.editar')
     def pacientes_acompanhante_novo(paciente_id):
         paciente = db.session.get(Paciente, paciente_id)
         if not paciente:
@@ -11601,6 +11739,7 @@ def create_app():
 
     @app.route('/pacientes/<int:paciente_id>/acompanhantes/<int:acompanhante_id>/excluir')
     @login_required
+    @permission_required('pacientes.editar')
     def pacientes_acompanhante_excluir(paciente_id, acompanhante_id):
         ac = db.session.get(Acompanhante, acompanhante_id)
         if not ac or ac.paciente_id != paciente_id:
@@ -11631,6 +11770,7 @@ def create_app():
 
     @app.route('/api/pacientes/<int:paciente_id>/resumo', methods=['GET'])
     @login_required
+    @permission_required('pacientes.ver')
     def api_paciente_resumo(paciente_id):
         """Dados essenciais do paciente para preencher agendamento (origem)."""
         paciente = db.session.get(Paciente, paciente_id)
@@ -11653,6 +11793,7 @@ def create_app():
 
     @app.route('/api/pacientes/<int:paciente_id>/acompanhantes', methods=['GET'])
     @login_required
+    @permission_required('pacientes.ver')
     def api_paciente_acompanhantes(paciente_id):
         paciente = db.session.get(Paciente, paciente_id)
         if not paciente:
@@ -11666,6 +11807,7 @@ def create_app():
 
     @app.route('/api/cnes/cidades', methods=['GET'])
     @login_required
+    @permission_required('agendamentos.ver')
     def api_cnes_cidades():
         cidades = listar_cidades_destino_cnes()
         return jsonify({
@@ -11676,6 +11818,7 @@ def create_app():
 
     @app.route('/api/cnes/estabelecimentos', methods=['GET'])
     @login_required
+    @permission_required('agendamentos.ver')
     def api_cnes_estabelecimentos():
         cidade = (request.args.get('cidade') or '').strip()
         q = (request.args.get('q') or '').strip()
@@ -11727,6 +11870,7 @@ def create_app():
 
     @app.route('/api/cnes/sincronizar', methods=['POST'])
     @login_required
+    @permission_required('sistema.cnes_sync')
     def api_cnes_sincronizar():
         data = request.get_json(silent=True) or {}
         cidade = (data.get('cidade') or request.form.get('cidade') or '').strip()
@@ -11739,6 +11883,7 @@ def create_app():
 
     @app.route('/pacientes/excluir/<int:paciente_id>')
     @login_required
+    @permission_required('pacientes.excluir')
     def pacientes_excluir(paciente_id):
         try:
             paciente = db.session.get(Paciente, paciente_id)
@@ -11765,6 +11910,7 @@ def create_app():
     # ===== ACOMPANHANTES (menu Cadastros) =====
     @app.route('/acompanhantes')
     @login_required
+    @permission_required('acompanhantes.ver')
     def acompanhantes():
         from html import escape
 
@@ -11888,6 +12034,7 @@ def create_app():
 
     @app.route('/acompanhantes/imprimir')
     @login_required
+    @permission_required('acompanhantes.imprimir')
     def acompanhantes_imprimir():
         filtros = obter_filtros_acompanhantes_request()
         page, per_page = obter_paginacao_request()
@@ -11900,6 +12047,7 @@ def create_app():
 
     @app.route('/acompanhantes/novo', methods=['GET', 'POST'])
     @login_required
+    @permission_required('acompanhantes.criar')
     def acompanhantes_novo():
         from html import escape
 
@@ -12158,6 +12306,7 @@ def create_app():
 
     @app.route('/acompanhantes/<int:acompanhante_id>/editar', methods=['GET', 'POST'])
     @login_required
+    @permission_required('acompanhantes.editar')
     def acompanhantes_editar(acompanhante_id):
         from html import escape
 
@@ -12328,6 +12477,7 @@ def create_app():
 
     @app.route('/acompanhantes/<int:acompanhante_id>/excluir')
     @login_required
+    @permission_required('acompanhantes.excluir')
     def acompanhantes_excluir(acompanhante_id):
         ac = db.session.get(Acompanhante, acompanhante_id)
         if not ac:
@@ -12357,6 +12507,7 @@ def create_app():
     # ===== VEÍCULOS =====
     @app.route('/veiculos')
     @login_required
+    @permission_required('veiculos.ver')
     def veiculos():
         from html import escape as html_esc
 
@@ -12604,6 +12755,7 @@ def create_app():
 
     @app.route('/veiculos/frotas/<int:frota_id>/excluir')
     @login_required
+    @permission_required('veiculos.excluir')
     def veiculos_frota_excluir(frota_id):
         frota = db.session.get(Frota, frota_id)
         if not frota:
@@ -12627,6 +12779,7 @@ def create_app():
 
     @app.route('/veiculos/imprimir')
     @login_required
+    @permission_required('veiculos.imprimir')
     def veiculos_imprimir():
         filtros = obter_filtros_veiculos_request()
         page, per_page = obter_paginacao_request()
@@ -12639,6 +12792,7 @@ def create_app():
     
     @app.route('/veiculos/cadastrar', methods=['GET', 'POST'])
     @login_required
+    @permission_required('veiculos.criar')
     def veiculos_cadastrar():
         if request.method == 'POST':
             form_tipo = (request.form.get('form_tipo') or 'veiculo').strip().lower()
@@ -13297,6 +13451,7 @@ def create_app():
     
     @app.route('/veiculos/editar/<int:veiculo_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('veiculos.editar')
     def veiculos_editar(veiculo_id):
         veiculo = db.session.get(Veiculo, veiculo_id)
         if not veiculo:
@@ -13439,6 +13594,7 @@ def create_app():
     
     @app.route('/veiculos/excluir/<int:veiculo_id>')
     @login_required
+    @permission_required('veiculos.excluir')
     def veiculos_excluir(veiculo_id):
         try:
             veiculo = db.session.get(Veiculo, veiculo_id)
@@ -13478,6 +13634,7 @@ def create_app():
     # ===== MOTORISTAS =====
     @app.route('/motoristas')
     @login_required
+    @permission_required('motoristas.ver')
     def motoristas():
         filtros = obter_filtros_motoristas_request()
         page, per_page = obter_paginacao_request()
@@ -13588,6 +13745,7 @@ def create_app():
 
     @app.route('/motoristas/imprimir')
     @login_required
+    @permission_required('motoristas.imprimir')
     def motoristas_imprimir():
         filtros = obter_filtros_motoristas_request()
         page, per_page = obter_paginacao_request()
@@ -13602,6 +13760,7 @@ def create_app():
 
     @app.route('/motoristas/cadastrar', methods=['GET', 'POST'])
     @login_required
+    @permission_required('motoristas.criar')
     def motoristas_cadastrar():
         if request.method == 'POST':
             try:
@@ -13914,6 +14073,7 @@ def create_app():
     
     @app.route('/motoristas/editar/<int:motorista_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('motoristas.editar')
     def motoristas_editar(motorista_id):
         motorista = db.session.get(Motorista, motorista_id)
         if not motorista:
@@ -14170,6 +14330,7 @@ def create_app():
     
     @app.route('/motoristas/excluir/<int:motorista_id>')
     @login_required
+    @permission_required('motoristas.excluir')
     def motoristas_excluir(motorista_id):
         try:
             motorista = db.session.get(Motorista, motorista_id)
@@ -14196,6 +14357,7 @@ def create_app():
      # ===== AGENDAMENTOS =====
     @app.route('/agendamentos')
     @login_required
+    @permission_required('agendamentos.ver')
     def agendamentos():
         filtros = obter_filtros_agendamentos_request()
         page, per_page = obter_paginacao_request()
@@ -14551,6 +14713,7 @@ def create_app():
 
     @app.route('/agendamentos/excluir-massa', methods=['POST'])
     @login_required
+    @permission_required('agendamentos.excluir')
     def agendamentos_excluir_massa():
         raw_ids = request.form.getlist('ag_ids')
         ids = []
@@ -14585,6 +14748,7 @@ def create_app():
 
     @app.route('/agendamentos/imprimir')
     @login_required
+    @permission_required('agendamentos.imprimir')
     def agendamentos_imprimir():
         filtros = obter_filtros_agendamentos_request()
         page, per_page = obter_paginacao_request()
@@ -14597,6 +14761,7 @@ def create_app():
 
     @app.route('/agendamentos/cartoes-motorista')
     @login_required
+    @permission_required('agendamentos.imprimir')
     def agendamentos_cartoes_motorista():
         """
         Impressão em lote dos Cartões do Motorista do filtro atual
@@ -14620,6 +14785,7 @@ def create_app():
 
     @app.route('/agendamentos/<int:agendamento_id>/folha-espelho')
     @login_required
+    @permission_required('agendamentos.imprimir')
     def folha_espelho_agendamento(agendamento_id):
         """Folha Espelho de uma única viagem — liberada só com programação completa."""
         agendamento = db.session.get(Agendamento, agendamento_id)
@@ -14647,6 +14813,7 @@ def create_app():
 
     @app.route('/agendamentos/<int:agendamento_id>/cartao-motorista')
     @login_required
+    @permission_required('agendamentos.imprimir')
     def cartao_motorista(agendamento_id):
         """
         Cartões do Motorista para impressão.
@@ -14682,6 +14849,7 @@ def create_app():
 
     @app.route('/agendamentos/demo-cartao-motorista')
     @login_required
+    @permission_required('agendamentos.imprimir')
     def demo_cartao_motorista():
         """Simula várias viagens no mesmo dia e abre os cartões (A4 paisagem, 4/folha)."""
         try:
@@ -14704,6 +14872,7 @@ def create_app():
     # ===== ROTA PARA ALTERAR STATUS =====
     @app.route('/agendamentos/reativar/<int:agendamento_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('agendamentos.editar')
     def agendamentos_reativar(agendamento_id):
         """Desfaz cancelamento: volta o status para agendado (ação explícita)."""
         try:
@@ -14729,6 +14898,7 @@ def create_app():
 
     @app.route('/agendamentos/status/<int:agendamento_id>/<novo_status>')
     @login_required
+    @permission_required('agendamentos.editar')
     def alterar_status_agendamento(agendamento_id, novo_status):
         try:
             agendamento = db.session.get(Agendamento, agendamento_id)
@@ -14798,6 +14968,7 @@ def create_app():
 
     @app.route('/agendamentos/novo', methods=['GET', 'POST'])
     @login_required
+    @permission_required('agendamentos.criar')
     def agendamentos_novo():
         if request.method == 'POST':
             try:
@@ -14877,6 +15048,7 @@ def create_app():
 
     @app.route('/agendamentos/corrigir/<int:agendamento_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('agendamentos.editar')
     def agendamentos_corrigir(agendamento_id):
         """Edição segura dos dados cadastrais (etapa 1) — não altera programação de frota."""
         agendamento = db.session.get(Agendamento, agendamento_id)
@@ -14945,6 +15117,7 @@ def create_app():
 
     @app.route('/agendamentos/editar/<int:agendamento_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('agendamentos.editar')
     def agendamentos_editar(agendamento_id):
         """Etapa 2 — Programação da viagem: veículo ou frota + motorista e observações."""
         from html import escape
@@ -15245,6 +15418,7 @@ def create_app():
   # ===== RELATÓRIOS =====
     @app.route('/relatorios')
     @login_required
+    @permission_required('relatorios.ver')
     def relatorios():
         # Obter parâmetros de filtro
         filtro_tipo = request.args.get('tipo', 'pacientes')
@@ -15725,7 +15899,7 @@ def create_app():
     
     # ===== GERENCIAMENTO DE USUÁRIOS =====
     def _admin_required_usuarios():
-        if current_user.tipo_usuario != 'administrador':
+        if not usuario_tem_permissao(current_user, 'usuarios.gerenciar'):
             flash('Acesso negado! Apenas administradores podem gerenciar usuários.', 'error')
             return False
         return True
@@ -15743,8 +15917,13 @@ def create_app():
             html.append(f'<option value="{valor}"{sel}>{rotulo}</option>')
         return ''.join(html)
 
+    def _validar_tipo_usuario(tipo):
+        t = (tipo or '').strip().lower()
+        return t if t in TIPOS_USUARIO_VALIDOS else None
+
     @app.route('/usuarios')
     @login_required
+    @permission_required('usuarios.gerenciar')
     def usuarios():
         if not _admin_required_usuarios():
             return redirect(url_for('dashboard'))
@@ -15851,7 +16030,8 @@ def create_app():
         return gerar_layout_base("Usuários", conteudo, "usuarios")
 
     @app.route('/usuarios/novo', methods=['GET', 'POST'])
-    @login_required  
+    @login_required
+    @permission_required('usuarios.gerenciar')
     def usuarios_novo():
         if not _admin_required_usuarios():
             return redirect(url_for('dashboard'))
@@ -15866,6 +16046,11 @@ def create_app():
                 
                 if not all([username, nome_completo, password, tipo_usuario]):
                     flash('Preencha todos os campos obrigatórios!', 'error')
+                    return redirect(url_for('usuarios_novo'))
+
+                tipo_usuario = _validar_tipo_usuario(tipo_usuario)
+                if not tipo_usuario:
+                    flash('Tipo de usuário inválido!', 'error')
                     return redirect(url_for('usuarios_novo'))
                 
                 if Usuario.query.filter_by(username=username).first():
@@ -15951,6 +16136,7 @@ def create_app():
 
     @app.route('/usuarios/visualizar/<int:usuario_id>')
     @login_required
+    @permission_required('usuarios.gerenciar')
     def usuarios_visualizar(usuario_id):
         if not _admin_required_usuarios():
             return redirect(url_for('dashboard'))
@@ -16011,6 +16197,7 @@ def create_app():
 
     @app.route('/usuarios/editar/<int:usuario_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('usuarios.gerenciar')
     def usuarios_editar(usuario_id):
         if not _admin_required_usuarios():
             return redirect(url_for('dashboard'))
@@ -16031,6 +16218,11 @@ def create_app():
 
                 if not all([username, nome_completo, tipo_usuario]):
                     flash('Preencha todos os campos obrigatórios!', 'error')
+                    return redirect(url_for('usuarios_editar', usuario_id=usuario_id))
+
+                tipo_usuario = _validar_tipo_usuario(tipo_usuario)
+                if not tipo_usuario:
+                    flash('Tipo de usuário inválido!', 'error')
                     return redirect(url_for('usuarios_editar', usuario_id=usuario_id))
 
                 outro = Usuario.query.filter_by(username=username).first()
@@ -16141,6 +16333,7 @@ def create_app():
 
     @app.route('/usuarios/excluir/<int:usuario_id>')
     @login_required
+    @permission_required('usuarios.gerenciar')
     def usuarios_excluir(usuario_id):
         if not _admin_required_usuarios():
             return redirect(url_for('dashboard'))
@@ -16653,6 +16846,7 @@ def create_app():
     # ===== SISTEMA DE CONTROLE DE USO DE VEÍCULOS =====
     @app.route('/uso-veiculos')
     @login_required
+    @permission_required('frota.ver')
     def uso_veiculos():
         # Buscar usos em andamento e recentes
         usos_em_andamento = UsoVeiculo.query.filter_by(status='em_andamento').order_by(UsoVeiculo.data_uso.desc()).all()
@@ -16871,6 +17065,7 @@ def create_app():
     
     @app.route('/uso-veiculos/iniciar', methods=['GET', 'POST'])
     @login_required
+    @permission_required('frota.operar')
     def uso_veiculos_iniciar():
         if request.method == 'POST':
             try:
@@ -17087,6 +17282,7 @@ def create_app():
     
     @app.route('/uso-veiculos/finalizar/<int:uso_id>', methods=['GET', 'POST'])
     @login_required
+    @permission_required('frota.operar')
     def uso_veiculos_finalizar(uso_id):
         uso = db.session.get(UsoVeiculo, uso_id)
         if not uso:
@@ -17244,6 +17440,7 @@ def create_app():
     
     @app.route('/uso-veiculos/detalhes/<int:uso_id>')
     @login_required
+    @permission_required('frota.ver')
     def uso_veiculos_detalhes(uso_id):
         uso = db.session.get(UsoVeiculo, uso_id)
         if not uso:
@@ -17534,6 +17731,7 @@ def create_app():
        # ===== ROTAS DE BACKUP AUTOMÁTICO =====
     @app.route('/backup')
     @login_required
+    @permission_required('backup.acessar')
     def backup_dashboard():
         global sistema_backup
         if not sistema_backup:
@@ -17794,6 +17992,7 @@ def create_app():
 
     @app.route('/backup/manual', methods=['POST'])
     @login_required
+    @permission_required('backup.acessar')
     def backup_manual():
         global sistema_backup
         if not sistema_backup:
@@ -17804,6 +18003,7 @@ def create_app():
 
     @app.route('/backup/excel', methods=['POST'])
     @login_required
+    @permission_required('backup.acessar')
     def backup_excel():
         global sistema_backup
         if not sistema_backup:
@@ -17814,6 +18014,7 @@ def create_app():
 
     @app.route('/backup/limpeza', methods=['POST'])
     @login_required
+    @permission_required('backup.acessar')
     def backup_limpeza():
         global sistema_backup
         if not sistema_backup:
@@ -17827,6 +18028,7 @@ def create_app():
 
     @app.route('/backup/download/<arquivo>')
     @login_required
+    @permission_required('backup.acessar')
     def backup_download(arquivo):
         """Download de arquivo de backup"""
         try:
@@ -17836,13 +18038,21 @@ def create_app():
             
             import os
             from flask import send_file, abort
-            
+
+            # Impede path traversal (../, barras absolutas, etc.)
+            nome_seguro = os.path.basename((arquivo or '').replace('\\', '/'))
+            if not nome_seguro or nome_seguro != arquivo or '..' in arquivo:
+                abort(400)
+
             # Verificar em todos os diretórios de backup
             subdirs = ['diarios', 'mensais', 'excel', 'manuais']
             arquivo_path = None
-            
+            base = os.path.realpath(sistema_backup.backup_dir)
+
             for subdir in subdirs:
-                caminho_teste = os.path.join(sistema_backup.backup_dir, subdir, arquivo)
+                caminho_teste = os.path.realpath(os.path.join(sistema_backup.backup_dir, subdir, nome_seguro))
+                if not caminho_teste.startswith(base + os.sep):
+                    continue
                 if os.path.exists(caminho_teste):
                     arquivo_path = caminho_teste
                     break
@@ -17859,6 +18069,7 @@ def create_app():
 
     @app.route('/backup/configurar', methods=['GET', 'POST'])
     @login_required
+    @permission_required('backup.acessar')
     def backup_configurar():
         """Configurações avançadas do sistema de backup"""
         if not current_user.tipo_usuario == 'administrador':
@@ -17922,6 +18133,7 @@ def create_app():
     # ===== ROTAS DE NOTIFICAÇÕES WHATSAPP =====
     @app.route('/whatsapp')
     @login_required
+    @permission_required('sistema.whatsapp')
     def whatsapp_dashboard():
         if not _whatsapp_admin_required():
             flash('Acesso restrito a administradores.', 'error')
@@ -18131,6 +18343,7 @@ def create_app():
 
     @app.route('/whatsapp/iniciar', methods=['POST'])
     @login_required
+    @permission_required('sistema.whatsapp')
     def whatsapp_iniciar():
         if not _whatsapp_admin_required():
             return jsonify({'sucesso': False, 'erro': 'Acesso restrito a administradores.'}), 403
@@ -18151,6 +18364,7 @@ def create_app():
 
     @app.route('/whatsapp/parar', methods=['POST'])
     @login_required
+    @permission_required('sistema.whatsapp')
     def whatsapp_parar():
         if not _whatsapp_admin_required():
             return jsonify({'sucesso': False, 'erro': 'Acesso restrito a administradores.'}), 403
@@ -18164,6 +18378,7 @@ def create_app():
 
     @app.route('/whatsapp/teste', methods=['POST'])
     @login_required
+    @permission_required('sistema.whatsapp')
     def whatsapp_teste():
         if not _whatsapp_admin_required():
             return jsonify({'sucesso': False, 'erro': 'Acesso restrito a administradores.'}), 403
@@ -18208,6 +18423,7 @@ def create_app():
     # ===== MÓDULO DE CONTROLE DE COMBUSTÍVEL =====
     @app.route('/combustivel')
     @login_required
+    @permission_required('frota.ver')
     def combustivel_dashboard():
         # Estatísticas gerais
         total_abastecimentos = Abastecimento.query.count()
@@ -18378,6 +18594,7 @@ def create_app():
     
     @app.route('/combustivel/abastecimento', methods=['GET', 'POST'])
     @login_required
+    @permission_required('frota.operar', 'frota.editar')
     def combustivel_abastecimento():
         if request.method == 'POST':
             try:
@@ -18634,6 +18851,7 @@ def create_app():
         
     @app.route('/combustivel/relatorio')
     @login_required
+    @permission_required('frota.ver')
     def combustivel_relatorio():
         # Filtros da URL
         data_inicio_raw = request.args.get('data_inicio', '').strip()
@@ -18847,6 +19065,7 @@ def create_app():
     # ===== API AUXILIAR PARA COMBUSTÍVEL =====
     @app.route('/api/veiculo/<int:veiculo_id>/ultimo-km')
     @login_required
+    @permission_required('frota.ver')
     def api_ultimo_km_veiculo(veiculo_id):
         try:
             # Buscar último KM registrado (abastecimento ou uso)
@@ -18905,6 +19124,7 @@ def create_app():
 
     @app.route('/api/fipe/<tipo>/marcas')
     @login_required
+    @permission_required('veiculos.ver')
     def api_fipe_marcas(tipo):
         if tipo not in ('carros', 'motos', 'caminhoes'):
             return jsonify({'erro': 'Tipo inválido'}), 400
@@ -18915,6 +19135,7 @@ def create_app():
 
     @app.route('/api/fipe/<tipo>/marcas/<cod_marca>/modelos')
     @login_required
+    @permission_required('veiculos.ver')
     def api_fipe_modelos(tipo, cod_marca):
         if tipo not in ('carros', 'motos', 'caminhoes'):
             return jsonify({'erro': 'Tipo inválido'}), 400
@@ -18925,6 +19146,7 @@ def create_app():
 
     @app.route('/api/fipe/<tipo>/marcas/<cod_marca>/modelos/<cod_modelo>/anos')
     @login_required
+    @permission_required('veiculos.ver')
     def api_fipe_anos(tipo, cod_marca, cod_modelo):
         if tipo not in ('carros', 'motos', 'caminhoes'):
             return jsonify({'erro': 'Tipo inválido'}), 400
@@ -18935,6 +19157,7 @@ def create_app():
 
     @app.route('/api/fipe/<tipo>/marcas/<cod_marca>/modelos/<cod_modelo>/anos/<path:cod_ano>')
     @login_required
+    @permission_required('veiculos.ver')
     def api_fipe_detalhe(tipo, cod_marca, cod_modelo, cod_ano):
         if tipo not in ('carros', 'motos', 'caminhoes'):
             return jsonify({'erro': 'Tipo inválido'}), 400
