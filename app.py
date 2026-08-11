@@ -10068,7 +10068,7 @@ def create_app():
             alert_class = "alert-error" if category == "error" else "alert-success"
             messages_html += f'<div class="alert {alert_class}">{message}</div>'
         
-        hero_url = url_for('static', filename='img/ambulancia.webp')
+        hero_url = url_for('static', filename='img/ambulancia.png')
         return f'''
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -10209,11 +10209,11 @@ def create_app():
                     flex: 1 1 auto;
                     min-width: 0;
                     height: 100%;
-                    background-color: #1a3a3a;
-                    background-image: url("{hero_url}");
+                    background-color: var(--primary-color);
+                    background-image: url("{hero_url}?v=8");
                     background-position: center center;
                     background-repeat: no-repeat;
-                    background-size: cover;
+                    background-size: contain;
                 }}
                 @media (max-width: 992px) {{
                     .login-panel {{
