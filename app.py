@@ -1,7 +1,7 @@
 import os
 import sys
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, redirect, url_for, flash, request, get_flashed_messages, session, jsonify
+from flask import Flask, render_template, redirect, url_for, flash, request, get_flashed_messages, session, jsonify, g, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -15,6 +15,14 @@ import threading
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+from auditoria import (
+    AuditService,
+    deve_registrar_navegacao,
+    inferir_acao_navegacao,
+    modulo_da_rota,
+)
+from auditoria_rotas import register_auditoria_routes
 
 from cnes_destinos import (
     cidade_cnes_por_nome,
@@ -210,6 +218,17 @@ def permission_required(*permissoes):
             if not current_user.is_authenticated:
                 return redirect(url_for('login'))
             if not any(usuario_tem_permissao(current_user, p) for p in permissoes):
+                try:
+                    if audit_service is not None:
+                        audit_service.registrar(
+                            'ACESSO_NEGADO',
+                            resultado='NEGADO',
+                            modulo=modulo_da_rota(request.path),
+                            descricao=f'Tentativa de acesso sem permissão (exige: {", ".join(permissoes)})',
+                            detalhes={'permissoes_exigidas': list(permissoes)},
+                        )
+                except Exception:
+                    pass
                 if request.path.startswith('/api/') or request.accept_mimetypes.best == 'application/json':
                     return jsonify({'error': 'Acesso não autorizado'}), 403
                 flash('Acesso não autorizado. Seu usuário não possui permissão para esta funcionalidade.', 'error')
@@ -242,6 +261,7 @@ def finance_view_required(f):
 # Inicializar extensões
 db = SQLAlchemy()
 login_manager = LoginManager()
+audit_service = None  # inicializado em create_app após modelo AuditLog
 
 # ===== MODELOS DE BANCO DE DADOS =====
 class Usuario(db.Model):
@@ -306,6 +326,44 @@ class Usuario(db.Model):
     def can_generate_invoices(self):
         """Quem pode gerar faturas: apenas contador e administrador"""
         return self.pode('faturamento.gerenciar')
+
+
+class AuditLog(db.Model):
+    """Trilha de auditoria — somente inserção via AuditService (sem edição/exclusão na UI)."""
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True, index=True)
+    usuario_nome = db.Column(db.String(120))
+    usuario_username = db.Column(db.String(80), index=True)
+    usuario_perfil = db.Column(db.String(30), index=True)
+
+    acao = db.Column(db.String(40), nullable=False, index=True)
+    modulo = db.Column(db.String(60), index=True)
+    rota = db.Column(db.String(255))
+    endpoint = db.Column(db.String(120))
+    metodo_http = db.Column(db.String(10))
+
+    ip = db.Column(db.String(64), index=True)
+    user_agent = db.Column(db.String(400))
+    sessao_id = db.Column(db.String(64), index=True)
+
+    entidade = db.Column(db.String(60), index=True)
+    entidade_id = db.Column(db.Integer, index=True)
+
+    resultado = db.Column(db.String(20), nullable=False, default='SUCESSO', index=True)
+    descricao = db.Column(db.String(500))
+    alteracoes = db.Column(db.Text)  # JSON
+    detalhes = db.Column(db.Text)    # JSON
+
+    __table_args__ = (
+        db.Index('ix_audit_user_created', 'usuario_id', 'created_at'),
+        db.Index('ix_audit_mod_acao', 'modulo', 'acao'),
+        db.Index('ix_audit_entidade', 'entidade', 'entidade_id'),
+    )
+
 
 class Paciente(db.Model):
     __tablename__ = 'pacientes'
@@ -1666,8 +1724,18 @@ def verificar_e_criar_banco():
         migrar_parentescos()
         migrar_especialidade_agendamento()
         migrar_cnes_estabelecimentos()
+        garantir_tabela_auditoria()
     
     return db_path
+
+def garantir_tabela_auditoria():
+    """Cria a tabela audit_logs se ainda não existir (create_all é idempotente)."""
+    try:
+        db.create_all()
+        print("✅ Tabela de auditoria verificada (audit_logs)")
+    except Exception as e:
+        print(f"⚠️ Falha ao garantir tabela de auditoria: {e}")
+
 
 def criar_banco_e_usuario():
     """Cria o banco e o usuário administrador"""
@@ -9378,6 +9446,8 @@ def gerar_sidebar_nav(ativo=""):
         sistema_items += item('faturamento', 'Faturamento', '💰', 'faturamento')
     if can('usuarios.gerenciar'):
         sistema_items += item('usuarios', 'Usuários', '👤', 'usuarios')
+    if can('auditoria.ver'):
+        sistema_items += item('auditoria', 'Auditoria', '🧾', 'auditoria')
     if can('sistema.whatsapp'):
         sistema_items += item('whatsapp_dashboard', 'WhatsApp', '📱', 'whatsapp')
     sistema_section = f'<div class="stp-nav-section">Sistema</div>{sistema_items}' if sistema_items else ''
@@ -10126,6 +10196,12 @@ def create_app():
     # Verificar e criar banco dentro do contexto da aplicação
     with app.app_context():
         verificar_e_criar_banco()
+
+        # ===== AUDITORIA / TRILHA DE ATIVIDADES =====
+        global audit_service
+        audit_service = AuditService(db, AuditLog)
+        audit_service.registrar_hooks()
+        garantir_tabela_auditoria()
         
         # ===== INICIALIZAR SISTEMA DE BACKUP =====
         global sistema_backup
@@ -10148,6 +10224,39 @@ def create_app():
             if not getattr(agendador_lembretes, 'ativo', False):
                 agendador_lembretes.iniciar_agendador()
     
+
+    @app.after_request
+    def auditoria_after_request(response):
+        """Registra navegação relevante (GET) sem poluir com assets/API."""
+        try:
+            if audit_service is None:
+                return response
+            if getattr(g, '_audit_skip_nav', False):
+                return response
+            if not current_user.is_authenticated:
+                return response
+            path = request.path or ''
+            if not deve_registrar_navegacao(path, request.method, response.status_code):
+                return response
+            if path.rstrip('/').endswith('/auditoria') and request.args:
+                acao = 'CONSULTA'
+                desc = 'Consultou trilha de auditoria (filtros)'
+            else:
+                acao = inferir_acao_navegacao(path, request.method)
+                desc = {
+                    'IMPRESSAO': f'Imprimiu / acessou impressão ({path})',
+                    'EXPORTACAO': f'Exportou dados ({path})',
+                    'VISUALIZACAO': f'Visualizou registro ({path})',
+                }.get(acao, f'Acessou {modulo_da_rota(path)} ({path})')
+            audit_service.registrar(
+                acao,
+                resultado='SUCESSO',
+                modulo=modulo_da_rota(path),
+                descricao=desc,
+            )
+        except Exception:
+            pass
+        return response
 
     # ===== ROTAS =====
     @app.route('/')
@@ -10176,18 +10285,59 @@ def create_app():
                     if not user.ativo:
                         flash('Usuário inativo. Solicite reativação ao administrador.', 'error')
                         print(f"❌ Usuário inativo: {user.username}")
+                        if audit_service is not None:
+                            audit_service.registrar(
+                                'LOGIN_FALHA',
+                                resultado='FALHA',
+                                modulo='Autenticação',
+                                descricao='Tentativa de login com usuário inativo',
+                                usuario_id=user.id,
+                                usuario_nome=user.nome_completo,
+                                usuario_username=user.username,
+                                usuario_perfil=user.tipo_usuario,
+                            )
                     elif user.check_password(password):
                         login_user(user)
                         session.pop('_flashes', None)
                         flash('Login realizado com sucesso!', 'success')
                         print(f"✅ Login bem-sucedido para: {user.username}")
+                        if audit_service is not None:
+                            audit_service.registrar(
+                                'LOGIN',
+                                resultado='SUCESSO',
+                                modulo='Autenticação',
+                                descricao='Login realizado com sucesso',
+                                usuario_id=user.id,
+                                usuario_nome=user.nome_completo,
+                                usuario_username=user.username,
+                                usuario_perfil=user.tipo_usuario,
+                            )
                         return redirect(url_for('dashboard'))
                     else:
                         flash('Senha incorreta!', 'error')
                         print(f"❌ Senha incorreta para: {user.username}")
+                        if audit_service is not None:
+                            audit_service.registrar(
+                                'LOGIN_FALHA',
+                                resultado='FALHA',
+                                modulo='Autenticação',
+                                descricao='Senha incorreta',
+                                usuario_id=user.id,
+                                usuario_nome=user.nome_completo,
+                                usuario_username=user.username,
+                                usuario_perfil=user.tipo_usuario,
+                            )
                 else:
                     flash('Usuário não encontrado!', 'error')
                     print(f"❌ Usuário não encontrado: {username}")
+                    if audit_service is not None:
+                        audit_service.registrar(
+                            'LOGIN_FALHA',
+                            resultado='FALHA',
+                            modulo='Autenticação',
+                            descricao='Usuário não encontrado',
+                            usuario_username=username,
+                        )
                     
             except Exception as e:
                 flash(f'Erro ao fazer login: {str(e)}', 'error')
@@ -14693,11 +14843,6 @@ def create_app():
             <p>Etapa 1: cadastrar · Editar dados · Etapa 2: programar viagem (veículo, motorista e observações)</p>
             <div style="margin-top: 1rem;">
                 <a href="{url_for('agendamentos_novo')}" class="btn">📅 Novo Agendamento</a>
-                <a href="{url_for('demo_cartao_motorista')}" class="btn"
-                   style="background:#6a1b9a;color:#fff;"
-                   title="Gera várias viagens no mesmo dia e abre cartões A4 paisagem (4 por folha)">
-                   🪪 Simular Cartões do Motorista
-                </a>
             </div>
         </div>
         
@@ -15892,11 +16037,33 @@ def create_app():
     @app.route('/logout')
     @login_required
     def logout():
+        if audit_service is not None:
+            try:
+                audit_service.registrar(
+                    'LOGOUT',
+                    resultado='SUCESSO',
+                    modulo='Autenticação',
+                    descricao='Logout realizado',
+                )
+            except Exception:
+                pass
         logout_user()
         session.pop('_flashes', None)
         flash('Logout realizado com sucesso!', 'success')
         return redirect(url_for('login'))
     
+    register_auditoria_routes(
+        app,
+        db=db,
+        AuditLog=AuditLog,
+        audit_service_getter=lambda: audit_service,
+        permission_required=permission_required,
+        obter_paginacao_request=obter_paginacao_request,
+        listar_paginado=listar_paginado,
+        gerar_paginacao=gerar_paginacao,
+        gerar_layout_base=gerar_layout_base,
+    )
+
     # ===== GERENCIAMENTO DE USUÁRIOS =====
     def _admin_required_usuarios():
         if not usuario_tem_permissao(current_user, 'usuarios.gerenciar'):
